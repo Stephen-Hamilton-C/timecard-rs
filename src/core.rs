@@ -109,13 +109,16 @@ impl TimeEntries {
 	pub fn load() -> TimeEntries {
 		let timecard_path = crate::timecard_path();
 		let mut timecard = File::create(timecard_path)
+			// TODO: Make this more user friendly
 			.expect("Error opening timecard. Is your timecard file corrupt?");
 
 		let mut data = String::new();
 		timecard.read_to_string(&mut data)
+			// TODO: Make this more user friendly
 			.expect("Error reading timecard. Is your timecard file corrupt?");
 		
 		let parsed_data = json::parse(&data)
+			// TODO: Make this more user friendly
 			.expect("Unable to parse JSON. Is your timecard file corrupt?");
 
 		TimeEntries::from(&parsed_data)
@@ -129,6 +132,7 @@ impl Into<JsonValue> for TimeEntries {
 		};
 		for entry in self.entries {
 			data["entries"].push(entry)
+				// TODO: Make this more user friendly
 				.expect("Should be impossible for entries to not be array.");
 		}
 
