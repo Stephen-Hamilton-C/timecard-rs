@@ -2,8 +2,8 @@ use chrono::naive::NaiveDateTime;
 use json::object;
 use json::JsonValue;
 use std::error::Error;
+use std::fs;
 use std::fs::File;
-use std::io::Read;
 use std::io::Write;
 use std::process;
 
@@ -87,6 +87,7 @@ impl From<&JsonValue> for TimeEntry {
 	}
 }
 
+#[derive(Debug)]
 pub struct TimeEntries {
 	pub entries: Vec<TimeEntry>,
 }
@@ -98,6 +99,7 @@ impl TimeEntries {
 
 	pub fn save(self) -> Result<(), Box<dyn Error>> {
 		let timecard_path = crate::timecard_path();
+		fs::create_dir_all(crate::data_dir())?;
 		let mut timecard = File::create(timecard_path)?;
 		
 		let data: JsonValue = self.into();
@@ -108,12 +110,8 @@ impl TimeEntries {
 
 	pub fn load() -> TimeEntries {
 		let timecard_path = crate::timecard_path();
-		let mut timecard = File::create(timecard_path)
-			// TODO: Make this more user friendly
-			.expect("Error opening timecard. Is your timecard file corrupt?");
 
-		let mut data = String::new();
-		timecard.read_to_string(&mut data)
+		let data = fs::read_to_string(timecard_path)
 			// TODO: Make this more user friendly
 			.expect("Error reading timecard. Is your timecard file corrupt?");
 		
