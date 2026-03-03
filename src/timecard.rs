@@ -94,11 +94,6 @@ impl Timecard {
         todo!()
     }
 
-    // TODO: Error should not be string
-    pub fn clean(&mut self, past_date: Option<&DateTime<Local>>) -> Result<(), String> {
-        todo!()
-    }
-
     pub fn clear(&mut self) {
         self.entries.clear();
     }
@@ -162,27 +157,27 @@ impl FromStr for Timecard {
 }
 
 #[cfg(test)]
-mod tests {
-    use std::io::empty;
-
-    use chrono::{TimeZone, Utc};
-
+pub mod tests {
     use super::*;
+
+    fn get_ref_time() -> DateTime<Local> {
+        Local::now()
+    }
 
     #[test]
     fn it_rejects_bad_entry() {
-        let now = Local::now();
+        let time = get_ref_time();
         let entries = vec![
             TimeEntry {
-                start: now - Duration::minutes(2),
-                end: Some(Local::now() - Duration::minutes(1))
+                start: time - Duration::minutes(2),
+                end: Some(time - Duration::minutes(1))
             },
             TimeEntry {
-                start: now,
-                end: Some(now - Duration::milliseconds(1)),
+                start: time,
+                end: Some(time - Duration::milliseconds(1)),
             },
             TimeEntry {
-                start: now + Duration::minutes(1),
+                start: time + Duration::minutes(1),
                 end: None,
             },
         ];
@@ -193,15 +188,15 @@ mod tests {
 
     #[test]
     fn it_rejects_bad_order() {
-        let now = Local::now();
+        let time = get_ref_time();
         let entries = vec![
             TimeEntry {
-                start: now - Duration::minutes(10),
-                end: Some(now - Duration::minutes(5)),
+                start: time - Duration::minutes(10),
+                end: Some(time - Duration::minutes(5)),
             },
             TimeEntry {
-                start: now - Duration::minutes(20),
-                end: Some(now - Duration::minutes(15)),
+                start: time - Duration::minutes(20),
+                end: Some(time - Duration::minutes(15)),
             },
         ];
         let result = Timecard::new(entries);
@@ -211,14 +206,14 @@ mod tests {
 
     #[test]
     fn it_rejects_bad_none_end_entry_order() {
-        let now = Local::now();
+        let time = get_ref_time();
         let entries = vec![
             TimeEntry {
-                start: now - Duration::minutes(10),
+                start: time - Duration::minutes(10),
                 end: None,
             },
             TimeEntry {
-                start: now - Duration::minutes(5),
+                start: time - Duration::minutes(5),
                 end: None,
             },
         ];
@@ -229,37 +224,37 @@ mod tests {
 
     #[test]
     fn it_creates_timecard() -> Result<(), Box<dyn std::error::Error>> {
-        let now = Local::now();
+        let time = get_ref_time();
         Timecard::new(vec![]);
         Timecard::new(vec![
             TimeEntry {
-                start: now - Duration::minutes(10),
-                end: Some(now - Duration::minutes(9)),
+                start: time - Duration::minutes(10),
+                end: Some(time - Duration::minutes(9)),
             },
             TimeEntry {
-                start: now - Duration::minutes(8),
-                end: Some(now - Duration::minutes(7)),
-            },
-        ])?;
-        Timecard::new(vec![
-            TimeEntry {
-                start: now - Duration::minutes(10),
-                end: Some(now - Duration::minutes(5)),
+                start: time - Duration::minutes(8),
+                end: Some(time - Duration::minutes(7)),
             },
         ])?;
         Timecard::new(vec![
             TimeEntry {
-                start: now - Duration::minutes(10),
-                end: Some(now - Duration::minutes(5)),
+                start: time - Duration::minutes(10),
+                end: Some(time - Duration::minutes(5)),
+            },
+        ])?;
+        Timecard::new(vec![
+            TimeEntry {
+                start: time - Duration::minutes(10),
+                end: Some(time - Duration::minutes(5)),
             },
             TimeEntry {
-                start: now - Duration::minutes(1),
+                start: time - Duration::minutes(1),
                 end: None,
             },
         ])?;
         Timecard::new(vec![
             TimeEntry {
-                start: now - Duration::minutes(1),
+                start: time - Duration::minutes(1),
                 end: None,
             },
         ])?;
@@ -269,9 +264,9 @@ mod tests {
 
     #[test]
     fn it_gets_entries() -> Result<(), Box<dyn std::error::Error>> {
-        let now = Local::now();
+        let time = get_ref_time();
         let entries = vec![TimeEntry {
-                start: now - Duration::minutes(5),
+                start: time - Duration::minutes(5),
                 end: None,
             },
         ];
@@ -283,7 +278,7 @@ mod tests {
 
     #[test]
     fn it_tracks_clocked_state() -> Result<(), Box<dyn std::error::Error>> {
-        let now = Local::now();
+        let time = get_ref_time();
 
         let timecard1 = Timecard::new(vec![])?;
         assert!(!timecard1.is_clocked_in());
@@ -291,7 +286,7 @@ mod tests {
 
         let timecard2 = Timecard::new(vec![
             TimeEntry {
-                start: now - Duration::minutes(10),
+                start: time - Duration::minutes(10),
                 end: None,
             },
         ])?;
@@ -300,12 +295,12 @@ mod tests {
 
         let timecard3 = Timecard::new(vec![
             TimeEntry {
-                start: now - Duration::minutes(10),
-                end: Some(now - Duration::minutes(5)),
+                start: time - Duration::minutes(10),
+                end: Some(time - Duration::minutes(5)),
             },
             TimeEntry {
-                start: now - Duration::minutes(3),
-                end: Some(now - Duration::minutes(1)),
+                start: time - Duration::minutes(3),
+                end: Some(time - Duration::minutes(1)),
             },
         ])?;
         assert!(!timecard3.is_clocked_in());
@@ -313,11 +308,11 @@ mod tests {
 
         let timecard4 = Timecard::new(vec![
             TimeEntry {
-                start: now - Duration::minutes(10),
-                end: Some(now - Duration::minutes(5)),
+                start: time - Duration::minutes(10),
+                end: Some(time - Duration::minutes(5)),
             },
             TimeEntry {
-                start: now - Duration::minutes(3),
+                start: time - Duration::minutes(3),
                 end: None,
             },
         ])?;
@@ -329,101 +324,163 @@ mod tests {
 
     #[test]
     fn it_filters_by_day() -> Result<(), Box<dyn std::error::Error>> {
-        let now = Local::now();
-        let empty_entries = vec![];
-        let timecard1 = Timecard::new(empty_entries.clone())?;
-        assert_eq!(empty_entries, timecard1.filter_by_day(&now));
-        assert_eq!(empty_entries, timecard1.filter_by_day(&(now - Duration::days(1))));
-        assert_eq!(empty_entries, timecard1.filter_by_day(&(now - Duration::weeks(52))));
+        let time = get_ref_time();
+        let timecard1 = Timecard::new(vec![])?;
+        assert!(timecard1.filter_by_day(&time).is_empty());
+        assert!(timecard1.filter_by_day(&(time - Duration::days(1))).is_empty());
+        assert!(timecard1.filter_by_day(&(time - Duration::weeks(52))).is_empty());
 
         let entries2 = vec![
             TimeEntry {
-                start: now - Duration::minutes(10),
+                start: time - Duration::minutes(10),
                 end: None,
             },
         ];
         let timecard2 = Timecard::new(entries2.clone())?;
-        assert_eq!(entries2, timecard2.filter_by_day(&now));
-        assert_eq!(entries2, timecard2.filter_by_day(&(now - Duration::minutes(30))));
-        assert_eq!(empty_entries, timecard2.filter_by_day(&(now - Duration::days(1))));
-        assert_eq!(empty_entries, timecard2.filter_by_day(&(now - Duration::weeks(52))));
+        assert_eq!(entries2, timecard2.filter_by_day(&time));
+        assert_eq!(entries2, timecard2.filter_by_day(&(time - Duration::minutes(30))));
+        assert!(timecard2.filter_by_day(&(time - Duration::days(1))).is_empty());
+        assert!(timecard2.filter_by_day(&(time - Duration::weeks(52))).is_empty());
 
         let entries3 = vec![
             TimeEntry {
-                start: now - Duration::days(3) - Duration::minutes(10),
-                end: Some(now - Duration::days(3)),
+                start: time - Duration::days(3) - Duration::minutes(10),
+                end: Some(time - Duration::days(3)),
             }
         ];
         let timecard3 = Timecard::new(entries3.clone())?;
-        assert_eq!(entries3, timecard3.filter_by_day(&(now - Duration::days(3))));
-        assert_eq!(empty_entries, timecard3.filter_by_day(&(now - Duration::days(2))));
-        assert_eq!(empty_entries, timecard3.filter_by_day(&(now - Duration::days(4))));
-        assert_eq!(empty_entries, timecard3.filter_by_day(&(now - Duration::days(1))));
-        assert_eq!(empty_entries, timecard3.filter_by_day(&now));
+        assert_eq!(entries3, timecard3.filter_by_day(&(time - Duration::days(3))));
+        assert!(timecard3.filter_by_day(&(time - Duration::days(2))).is_empty());
+        assert!(timecard3.filter_by_day(&(time - Duration::days(4))).is_empty());
+        assert!(timecard3.filter_by_day(&(time - Duration::days(1))).is_empty());
+        assert!(timecard3.filter_by_day(&time).is_empty());
 
         let entries4 = vec![
             TimeEntry {
-                start: now - Duration::days(3) - Duration::minutes(10),
-                end: Some(now - Duration::days(3)),
+                start: time - Duration::days(3) - Duration::minutes(10),
+                end: Some(time - Duration::days(3)),
             },
             TimeEntry {
-                start: now - Duration::days(2) - Duration::minutes(10),
-                end: Some(now - Duration::days(2)),
+                start: time - Duration::days(2) - Duration::minutes(10),
+                end: Some(time - Duration::days(2)),
             },
             TimeEntry {
-                start: now - Duration::days(1) - Duration::minutes(10),
-                end: Some(now - Duration::days(1)),
+                start: time - Duration::days(1) - Duration::minutes(10),
+                end: Some(time - Duration::days(1)),
             },
         ];
         let timecard4 = Timecard::new(entries4.clone())?;
-        assert_eq!(vec![entries4[0].clone()], timecard4.filter_by_day(&(now - Duration::days(3))));
-        assert_eq!(vec![entries4[1].clone()], timecard4.filter_by_day(&(now - Duration::days(2))));
-        assert_eq!(vec![entries4[2].clone()], timecard4.filter_by_day(&(now - Duration::days(1))));
-        assert_eq!(empty_entries, timecard4.filter_by_day(&(now - Duration::days(4))));
-        assert_eq!(empty_entries, timecard4.filter_by_day(&now));
+        assert_eq!(vec![entries4[0].clone()], timecard4.filter_by_day(&(time - Duration::days(3))));
+        assert_eq!(vec![entries4[1].clone()], timecard4.filter_by_day(&(time - Duration::days(2))));
+        assert_eq!(vec![entries4[2].clone()], timecard4.filter_by_day(&(time - Duration::days(1))));
+        assert!(timecard4.filter_by_day(&(time - Duration::days(4))).is_empty());
+        assert!(timecard4.filter_by_day(&time).is_empty());
 
         let entries5 = vec![
             TimeEntry {
-                start: now - Duration::days(3) - Duration::minutes(10),
-                end: Some(now - Duration::days(3)),
+                start: time - Duration::days(3) - Duration::minutes(10),
+                end: Some(time - Duration::days(3)),
             },
             TimeEntry {
-                start: now - Duration::days(2) - Duration::minutes(10),
-                end: Some(now - Duration::days(1)),
+                start: time - Duration::days(2) - Duration::minutes(10),
+                end: Some(time - Duration::days(1)),
             },
         ];
         let timecard5 = Timecard::new(entries5.clone())?;
-        assert_eq!(vec![entries5[0].clone()], timecard5.filter_by_day(&(now - Duration::days(3))));
-        assert_eq!(vec![entries5[1].clone()], timecard5.filter_by_day(&(now - Duration::days(2))));
-        assert_eq!(vec![entries5[1].clone()], timecard5.filter_by_day(&(now - Duration::days(1))));
-        assert_eq!(empty_entries, timecard5.filter_by_day(&(now - Duration::days(4))));
-        assert_eq!(empty_entries, timecard5.filter_by_day(&now));
+        assert_eq!(vec![entries5[0].clone()], timecard5.filter_by_day(&(time - Duration::days(3))));
+        assert_eq!(vec![entries5[1].clone()], timecard5.filter_by_day(&(time - Duration::days(2))));
+        assert_eq!(vec![entries5[1].clone()], timecard5.filter_by_day(&(time - Duration::days(1))));
+        assert!(timecard5.filter_by_day(&(time - Duration::days(4))).is_empty());
+        assert!(timecard5.filter_by_day(&time).is_empty());
 
         let entries6 = vec![
             TimeEntry {
-                start: now - Duration::days(3) - Duration::minutes(10),
-                end: Some(now - Duration::days(3)),
+                start: time - Duration::days(3) - Duration::minutes(10),
+                end: Some(time - Duration::days(3)),
             },
             TimeEntry {
-                start: now - Duration::days(2) - Duration::minutes(10),
+                start: time - Duration::days(2) - Duration::minutes(10),
                 end: None,
             },
         ];
         let timecard6 = Timecard::new(entries6.clone())?;
-        assert_eq!(vec![entries6[0].clone()], timecard6.filter_by_day(&(now - Duration::days(3))));
-        assert_eq!(vec![entries6[1].clone()], timecard6.filter_by_day(&(now - Duration::days(2))));
-        assert_eq!(vec![entries6[1].clone()], timecard6.filter_by_day(&(now - Duration::days(1))));
-        assert_eq!(vec![entries6[1].clone()], timecard6.filter_by_day(&now));
+        assert_eq!(vec![entries6[0].clone()], timecard6.filter_by_day(&(time - Duration::days(3))));
+        assert_eq!(vec![entries6[1].clone()], timecard6.filter_by_day(&(time - Duration::days(2))));
+        assert_eq!(vec![entries6[1].clone()], timecard6.filter_by_day(&(time - Duration::days(1))));
+        assert_eq!(vec![entries6[1].clone()], timecard6.filter_by_day(&time));
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_filters_by_date_range() -> Result<(), Box<dyn std::error::Error>> {
+        let time = get_ref_time();
+
+        let entries1 = vec![
+            TimeEntry {
+                start: time - Duration::days(14) - Duration::hours(8),
+                end: Some(time - Duration::days(14)),
+            },
+            TimeEntry {
+                start: time - Duration::days(13) - Duration::hours(8),
+                end: Some(time - Duration::days(13)),
+            },
+            TimeEntry {
+                start: time - Duration::days(12) - Duration::hours(4),
+                end: Some(time - Duration::days(12) - Duration::hours(3) - Duration::minutes(30)),
+            },
+            TimeEntry {
+                start: time - Duration::days(12) - Duration::hours(3),
+                end: Some(time - Duration::days(12)),
+            },
+            TimeEntry {
+                start: time - Duration::days(10) - Duration::hours(3),
+                end: Some(time - Duration::days(8)),
+            },
+        ];
+        let timecard1 = Timecard::new(entries1.clone())?;
+        assert_eq!(vec![entries1[0].clone()], timecard1.filter_by_date_range(&(time - Duration::days(14)), &(time - Duration::days(14))));
+        assert_eq!(vec![entries1[1].clone()], timecard1.filter_by_date_range(&(time - Duration::days(13)), &(time - Duration::days(13))));
+        assert_eq!(
+            vec![
+                entries1[0].clone(),
+                entries1[1].clone(),
+            ],
+            timecard1.filter_by_date_range(&(time - Duration::days(14)), &(time - Duration::days(13))),
+        );
+        assert_eq!(
+            vec![
+                entries1[0].clone(),
+                entries1[1].clone(),
+                entries1[2].clone(),
+                entries1[3].clone(),
+            ],
+            timecard1.filter_by_date_range(&(time - Duration::days(14)), &(time - Duration::days(12))),
+        );
+        assert_eq!(entries1, timecard1.filter_by_date_range(&(time - Duration::days(14)), &(time - Duration::days(8))));
+        assert_eq!(entries1, timecard1.filter_by_date_range(&(time - Duration::days(20)), &time));
+        assert_eq!(vec![entries1[4].clone()], timecard1.filter_by_date_range(&(time - Duration::days(10)), &(time - Duration::days(8))));
+        
+        let entries2 = vec![
+            TimeEntry {
+                start: time - Duration::days(2),
+                end: None,
+            },
+        ];
+        let timecard2 = Timecard::new(entries2.clone())?;
+        assert_eq!(entries2, timecard2.filter_by_date_range(&(time - Duration::days(2)), &Local::now()));
+        assert_eq!(entries2, timecard2.filter_by_date_range(&(time - Duration::days(2)), &(time - Duration::days(2))));
+        assert_eq!(entries2, timecard2.filter_by_date_range(&(time - Duration::days(3)), &Local::now()));
 
         Ok(())
     }
 
     #[test]
     fn it_clears() -> Result<(), Box<dyn std::error::Error>> {
-        let now = Local::now();
+        let time = get_ref_time();
         let mut timecard = Timecard::new(vec![
             TimeEntry {
-                start: now - Duration::minutes(10),
+                start: time - Duration::minutes(10),
                 end: None,
             },
         ])?;
@@ -431,6 +488,171 @@ mod tests {
         assert!(!timecard.entries.is_empty());
         timecard.clear();
         assert!(timecard.entries.is_empty());
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_clocks_in() -> Result<(), Box<dyn std::error::Error>> {
+        let time = get_ref_time();
+
+        let mut timecard1 = Timecard::new(vec![])?;
+        assert!(timecard1.entries.is_empty());
+        assert!(!timecard1.is_clocked_in());
+        assert!(timecard1.is_clocked_out());
+
+        timecard1.clock_in(&time)?;
+
+        assert_eq!(
+            vec![TimeEntry { start: time, end: None }],
+            timecard1.entries,
+        );
+        assert!(timecard1.is_clocked_in());
+        assert!(!timecard1.is_clocked_out());
+
+        let entries2 = vec![
+            TimeEntry {
+                start: time - Duration::hours(8),
+                end: Some(time - Duration::hours(4)),
+            },
+        ];
+        let mut timecard2 = Timecard::new(entries2.clone())?;
+        assert_eq!(entries2, timecard2.entries);
+        assert!(!timecard2.is_clocked_in());
+        assert!(timecard2.is_clocked_out());
+
+        timecard2.clock_in(&time)?;
+
+        assert_eq!(
+            vec![
+                entries2[0].clone(),
+                TimeEntry {
+                    start: time.clone(),
+                    end: None,
+                },
+            ],
+            timecard2.entries,
+        );
+        assert!(timecard2.is_clocked_in());
+        assert!(!timecard2.is_clocked_out());
+
+        let entries3 = vec![
+            TimeEntry {
+                start: time - Duration::hours(4),
+                end: None,
+            },
+        ];
+        let mut timecard3 = Timecard::new(entries3.clone())?;
+        assert_eq!(entries3, timecard3.entries);
+        assert!(timecard3.is_clocked_in());
+        assert!(!timecard3.is_clocked_out());
+
+        let result3 = timecard3.clock_in(&time);
+        // TODO: Assert specific error
+        assert!(result3.is_err());
+
+        let result4 = timecard3.clock_in(&(Local::now() + Duration::seconds(1)));
+        // TODO: Assert specific error
+        assert!(result4.is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_clocks_out() -> Result<(), Box<dyn std::error::Error>> {
+        let time = get_ref_time();
+
+        let mut timecard1 = Timecard::new(vec![])?;
+        assert!(timecard1.entries.is_empty());
+        assert!(!timecard1.is_clocked_in());
+        assert!(timecard1.is_clocked_out());
+
+        let result1 = timecard1.clock_out(&time);
+        // TODO: Assert specific error
+        assert!(result1.is_err());
+
+        let entries2 = vec![
+            TimeEntry {
+                start: time - Duration::hours(4),
+                end: None,
+            },
+        ];
+        let mut timecard2 = Timecard::new(entries2.clone())?;
+        assert_eq!(entries2, timecard2.entries);
+        assert!(timecard2.is_clocked_in());
+        assert!(!timecard2.is_clocked_out());
+
+        timecard2.clock_out(&time)?;
+        assert_eq!(
+            vec![
+                TimeEntry {
+                    start: entries2[0].clone().start,
+                    end: Some(time.clone()),
+                },
+            ],
+            timecard2.entries,
+        );
+        assert!(!timecard2.is_clocked_in());
+        assert!(timecard2.is_clocked_out());
+
+        let entries3 = vec![
+            TimeEntry {
+                start: time - Duration::hours(8),
+                end: Some(time - Duration::hours(5)),
+            },
+            TimeEntry {
+                start: time - Duration::hours(4),
+                end: None,
+            },
+        ];
+        let mut timecard3 = Timecard::new(entries3.clone())?;
+        assert_eq!(entries3, timecard3.entries);
+        assert!(timecard3.is_clocked_in());
+        assert!(!timecard3.is_clocked_out());
+
+        timecard3.clock_out(&time)?;
+        assert_eq!(
+            vec![
+                timecard3.entries[0].clone(),
+                TimeEntry {
+                    start: timecard3.entries[1].clone().start,
+                    end: Some(time.clone()),
+                },
+            ],
+            timecard3.entries,
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_undos() -> Result<(), Box<dyn std::error::Error>> {
+        let time = get_ref_time();
+        todo!();
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_gets_duration_worked() -> Result<(), Box<dyn std::error::Error>> {
+        let time = get_ref_time();
+        todo!();
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_gets_duration_on_break() -> Result<(), Box<dyn std::error::Error>> {
+        let time = get_ref_time();
+        todo!();
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_gets_expected_end_time() -> Result<(), Box<dyn std::error::Error>> {
+        let time = get_ref_time();
+        todo!();
 
         Ok(())
     }
