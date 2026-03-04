@@ -570,21 +570,19 @@ fn it_undos() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[test]
-fn it_gets_duration_worked() -> Result<(), Box<dyn std::error::Error>> {
+fn get_duration_timecards(now: DateTime<Local>) -> Result<Vec<Timecard>, Box<dyn std::error::Error>> {
     let time = get_ref_time();
-    
-    let entries1 = vec![
-        TimeEntry {
-            start: time - Duration::hours(8),
-            end: Some(time - Duration::hours(4)),
-        },
-    ];
-    let timecard1 = Timecard::new(entries1)?;
-    assert_eq!(Duration::hours(4), timecard1.get_duration_worked(&time, true));
-    assert_eq!(Duration::hours(4), timecard1.get_duration_worked(&time, false));
 
-    let entries2 = vec![
+    let timecard0 = Timecard::new(
+        vec![
+            TimeEntry {
+                start: time - Duration::hours(8),
+                end: Some(time - Duration::hours(4)),
+            },
+        ]
+    )?;
+
+    let timecard1 = Timecard::new(vec![
         TimeEntry {
             start: time - Duration::hours(8),
             end: Some(time - Duration::hours(5)),
@@ -593,13 +591,9 @@ fn it_gets_duration_worked() -> Result<(), Box<dyn std::error::Error>> {
             start: time - Duration::hours(4),
             end: Some(time.clone()),
         },
-    ];
-    let timecard2 = Timecard::new(entries2)?;
-    assert_eq!(Duration::hours(7), timecard2.get_duration_worked(&time, true));
-    assert_eq!(Duration::hours(7), timecard2.get_duration_worked(&time, false));
+    ])?;
 
-    let now = Local::now();
-    let entries3 = vec![
+    let timecard2 = Timecard::new(vec![
         TimeEntry {
             start: now - Duration::hours(8),
             end: Some(now - Duration::minutes(15)),
@@ -608,24 +602,16 @@ fn it_gets_duration_worked() -> Result<(), Box<dyn std::error::Error>> {
             start: now - Duration::minutes(10),
             end: None,
         },
-    ];
-    let timecard3 = Timecard::new(entries3)?;
-    assert_eq!(Duration::hours(8) - Duration::minutes(5), timecard3.get_duration_worked(&now, true));
-    assert_eq!(Duration::hours(8) - Duration::minutes(15), timecard3.get_duration_worked(&now, false));
+    ])?;
 
-    let entries4 = vec![
+    let timecard3 = Timecard::new(vec![
         TimeEntry {
             start: time - Duration::days(1) - Duration::hours(8),
             end: Some(time - Duration::hours(1)),
         },
-    ];
-    let timecard4 = Timecard::new(entries4)?;
-    assert_eq!(Duration::days(1) + Duration::hours(7), timecard4.get_duration_worked(&time, true));
-    assert_eq!(Duration::days(1) + Duration::hours(7), timecard4.get_duration_worked(&time, false));
-    assert_eq!(Duration::days(1) + Duration::hours(7), timecard4.get_duration_worked(&(time - Duration::days(1)), true));
-    assert_eq!(Duration::days(1) + Duration::hours(7), timecard4.get_duration_worked(&(time - Duration::days(1)), false));
+    ])?;
 
-    let entries5 = vec![
+    let timecard4 = Timecard::new(vec![
         TimeEntry {
             start: time - Duration::days(1) - Duration::hours(9),
             end: Some(time - Duration::days(1) - Duration::hours(5)),
@@ -642,15 +628,9 @@ fn it_gets_duration_worked() -> Result<(), Box<dyn std::error::Error>> {
             start: time - Duration::hours(3),
             end: Some(time.clone()),
         },
-    ];
-    let timecard5 = Timecard::new(entries5)?;
-    assert_eq!(Duration::hours(8), timecard5.get_duration_worked(&(time - Duration::days(1)), true));
-    assert_eq!(Duration::hours(8), timecard5.get_duration_worked(&(time - Duration::days(1)), false));
-    assert_eq!(Duration::hours(9), timecard5.get_duration_worked(&time, true));
-    assert_eq!(Duration::hours(9), timecard5.get_duration_worked(&time, false));
+    ])?;
 
-    let now = Local::now();
-    let entries6 = vec![
+    let timecard5 = Timecard::new(vec![
         TimeEntry {
             start: time - Duration::days(1) - Duration::hours(9),
             end: Some(time - Duration::days(1) - Duration::hours(5)),
@@ -675,14 +655,87 @@ fn it_gets_duration_worked() -> Result<(), Box<dyn std::error::Error>> {
             start: now - Duration::hours(3),
             end: None,
         },
-    ];
-    let timecard6 = Timecard::new(entries6)?;
-    assert_eq!(Duration::hours(8), timecard6.get_duration_worked(&(time - Duration::days(1)), true));
-    assert_eq!(Duration::hours(8), timecard6.get_duration_worked(&(time - Duration::days(1)), false));
-    assert_eq!(Duration::hours(9), timecard6.get_duration_worked(&time, true));
-    assert_eq!(Duration::hours(9), timecard6.get_duration_worked(&time, false));
-    assert_eq!(Duration::hours(7), timecard6.get_duration_worked(&now, true));
-    assert_eq!(Duration::hours(4), timecard6.get_duration_worked(&now, false));
+    ])?;
+
+    let timecard6 = Timecard::new(vec![
+        TimeEntry {
+            start: now - Duration::minutes(30),
+            end: Some(now - Duration::minutes(25)),
+        },
+        TimeEntry {
+            start: now - Duration::minutes(15),
+            end: Some(now - Duration::minutes(5)),
+        },
+        TimeEntry {
+            start: now - Duration::minutes(1),
+            end: None
+        },
+    ])?;
+
+    let timecard7 = Timecard::new(vec![
+        TimeEntry {
+            start: now - Duration::minutes(30),
+            end: Some(now - Duration::minutes(25)),
+        },
+        TimeEntry {
+            start: now - Duration::minutes(15),
+            end: Some(now - Duration::minutes(5)),
+        },
+        TimeEntry {
+            start: now - Duration::minutes(4),
+            end: Some(now - Duration::minutes(2)),
+        },
+    ])?;
+
+    Ok(vec![
+        timecard0,
+        timecard1,
+        timecard2,
+        timecard3,
+        timecard4,
+        timecard5,
+        timecard6,
+        timecard7,
+    ])
+}
+
+#[test]
+fn it_gets_duration_worked() -> Result<(), Box<dyn std::error::Error>> {
+    let time = get_ref_time();
+    let now = Local::now();
+    let timecards = get_duration_timecards(now.clone())?;
+    
+    assert_eq!(Duration::hours(4), timecards[0].get_duration_worked(&time, true));
+    assert_eq!(Duration::hours(4), timecards[0].get_duration_worked(&time, false));
+
+    assert_eq!(Duration::hours(7), timecards[1].get_duration_worked(&time, true));
+    assert_eq!(Duration::hours(7), timecards[1].get_duration_worked(&time, false));
+
+    assert_eq!(Duration::hours(8) - Duration::minutes(5), timecards[2].get_duration_worked(&now, true));
+    assert_eq!(Duration::hours(8) - Duration::minutes(15), timecards[2].get_duration_worked(&now, false));
+
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecards[3].get_duration_worked(&time, true));
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecards[3].get_duration_worked(&time, false));
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecards[3].get_duration_worked(&(time - Duration::days(1)), true));
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecards[3].get_duration_worked(&(time - Duration::days(1)), false));
+
+    assert_eq!(Duration::hours(8), timecards[4].get_duration_worked(&(time - Duration::days(1)), true));
+    assert_eq!(Duration::hours(8), timecards[4].get_duration_worked(&(time - Duration::days(1)), false));
+    assert_eq!(Duration::hours(9), timecards[4].get_duration_worked(&time, true));
+    assert_eq!(Duration::hours(9), timecards[4].get_duration_worked(&time, false));
+
+    assert_eq!(Duration::hours(8), timecards[5].get_duration_worked(&(time - Duration::days(1)), true));
+    assert_eq!(Duration::hours(8), timecards[5].get_duration_worked(&(time - Duration::days(1)), false));
+    assert_eq!(Duration::hours(9), timecards[5].get_duration_worked(&time, true));
+    assert_eq!(Duration::hours(9), timecards[5].get_duration_worked(&time, false));
+    assert_eq!(Duration::hours(7), timecards[5].get_duration_worked(&now, true));
+    assert_eq!(Duration::hours(4), timecards[5].get_duration_worked(&now, false));
+
+    assert_eq!(Duration::minutes(16), timecards[6].get_duration_worked(&now, true));
+    assert_eq!(Duration::minutes(15), timecards[6].get_duration_worked(&now, false));
+
+    assert_eq!(Duration::minutes(17), timecards[7].get_duration_worked(&now, true));
+    assert_eq!(Duration::minutes(17), timecards[7].get_duration_worked(&now, false));
 
     Ok(())
 }
@@ -690,7 +743,42 @@ fn it_gets_duration_worked() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn it_gets_duration_on_break() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
-    todo!();
+    let now = Local::now();
+    let timecards = get_duration_timecards(now.clone())?;
+    
+    assert_eq!(Duration::zero(), timecards[0].get_duration_on_break(&time, true));
+    assert_eq!(Duration::zero(), timecards[0].get_duration_on_break(&time, false));
+
+    assert_eq!(Duration::hours(1), timecards[1].get_duration_on_break(&time, true));
+    assert_eq!(Duration::hours(1), timecards[1].get_duration_on_break(&time, false));
+
+    assert_eq!(Duration::minutes(5), timecards[2].get_duration_on_break(&now, true));
+    assert_eq!(Duration::minutes(5), timecards[2].get_duration_on_break(&now, false));
+    assert_eq!(Duration::zero(), timecards[2].get_duration_on_break(&time, true));
+    assert_eq!(Duration::zero(), timecards[2].get_duration_on_break(&time, false));
+
+    assert_eq!(Duration::zero(), timecards[3].get_duration_on_break(&time, true));
+    assert_eq!(Duration::zero(), timecards[3].get_duration_on_break(&time, false));
+    assert_eq!(Duration::zero(), timecards[3].get_duration_on_break(&now, true));
+    assert_eq!(Duration::zero(), timecards[3].get_duration_on_break(&now, false));
+
+    assert_eq!(Duration::hours(1), timecards[4].get_duration_on_break(&(time - Duration::days(1)), true));
+    assert_eq!(Duration::hours(1), timecards[4].get_duration_on_break(&(time - Duration::days(1)), false));
+    assert_eq!(Duration::hours(2), timecards[4].get_duration_on_break(&time, true));
+    assert_eq!(Duration::hours(2), timecards[4].get_duration_on_break(&time, false));
+
+    assert_eq!(Duration::hours(1), timecards[5].get_duration_on_break(&(time - Duration::days(1)), true));
+    assert_eq!(Duration::hours(1), timecards[5].get_duration_on_break(&(time - Duration::days(1)), false));
+    assert_eq!(Duration::hours(2), timecards[5].get_duration_on_break(&time, true));
+    assert_eq!(Duration::hours(2), timecards[5].get_duration_on_break(&time, false));
+    assert_eq!(Duration::hours(1), timecards[5].get_duration_on_break(&now, true));
+    assert_eq!(Duration::hours(1), timecards[5].get_duration_on_break(&now, false));
+
+    assert_eq!(Duration::minutes(14), timecards[6].get_duration_on_break(&now, true));
+    assert_eq!(Duration::minutes(14), timecards[6].get_duration_on_break(&now, false));
+
+    assert_eq!(Duration::minutes(13), timecards[7].get_duration_on_break(&now, true));
+    assert_eq!(Duration::minutes(11), timecards[7].get_duration_on_break(&now, false));
 
     Ok(())
 }
@@ -698,7 +786,17 @@ fn it_gets_duration_on_break() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn it_gets_expected_end_time() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
-    todo!();
+    let now = Local::now();
+    let timecards = get_duration_timecards(now.clone())?;
+    
+    assert_eq!(time, timecards[0].get_expected_end_time(&Duration::hours(8), &time));
+    
+    assert_eq!(time + Duration::hours(1), timecards[1].get_expected_end_time(&Duration::hours(8), &time));
+    assert_eq!(time, timecards[1].get_expected_end_time(&Duration::hours(7), &time));
+
+    assert_eq!(now + Duration::minutes(5), timecards[2].get_expected_end_time(&Duration::hours(8), &now));
+
+    assert_eq!(time - Duration::days(1), timecards[3].get_expected_end_time(&Duration::hours(8), &(time - Duration::days(1))));
 
     Ok(())
 }
