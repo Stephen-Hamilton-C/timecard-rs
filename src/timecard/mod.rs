@@ -116,11 +116,11 @@ impl Timecard {
         todo!()
     }
 
-    pub fn get_duration_worked(&self, date: &DateTime<Local>, include_now: Option<bool>) -> Duration {
+    pub fn get_duration_worked(&self, date: &DateTime<Local>, include_now: bool) -> Duration {
         todo!()
     }
 
-    pub fn get_duration_on_break(&self, date: &DateTime<Local>, include_now: Option<bool>) -> Duration {
+    pub fn get_duration_on_break(&self, date: &DateTime<Local>, include_now: bool) -> Duration {
         todo!()
     }
 
