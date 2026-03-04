@@ -468,7 +468,104 @@ fn it_clocks_out() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn it_undos() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
-    todo!();
+    
+    let mut timecard1 = Timecard::new(vec![])?;
+    assert!(timecard1.entries.is_empty());
+    assert!(!timecard1.is_clocked_in());
+    assert!(timecard1.is_clocked_out());
+
+    let result = timecard1.undo();
+    // TODO: Assert specific error
+    assert!(result.is_err());
+
+    let entries2 = vec![
+        TimeEntry {
+            start: time - Duration::hours(4),
+            end: None,
+        },
+    ];
+    let mut timecard2 = Timecard::new(entries2.clone())?;
+    assert_eq!(entries2, timecard2.entries);
+    assert!(timecard2.is_clocked_in());
+    assert!(!timecard2.is_clocked_out());
+
+    timecard2.undo()?;
+    assert!(timecard2.entries.is_empty());
+    assert!(!timecard2.is_clocked_in());
+    assert!(timecard2.is_clocked_out());
+
+    let entries3 = vec![
+        TimeEntry {
+            start: time - Duration::hours(4),
+            end: Some(time - Duration::hours(1)),
+        },
+    ];
+    let mut timecard3 = Timecard::new(entries3.clone())?;
+    assert_eq!(entries3, timecard3.entries);
+    assert!(!timecard3.is_clocked_in());
+    assert!(timecard3.is_clocked_out());
+
+    timecard3.undo()?;
+    assert_eq!(
+        vec![
+            TimeEntry {
+                start: entries3[0].clone().start,
+                end: None,
+            },
+        ],
+        timecard3.entries,
+    );
+    assert!(timecard3.is_clocked_in());
+    assert!(!timecard3.is_clocked_out());
+
+    let entries4 = vec![
+        TimeEntry {
+            start: time - Duration::hours(8),
+            end: Some(time - Duration::hours(4)),
+        },
+        TimeEntry {
+            start: time - Duration::hours(3),
+            end: Some(time - Duration::minutes(5)),
+        },
+    ];
+    let mut timecard4 = Timecard::new(entries4.clone())?;
+    assert_eq!(entries4, timecard4.entries);
+    assert!(!timecard4.is_clocked_in());
+    assert!(timecard4.is_clocked_out());
+
+    timecard4.undo()?;
+    assert_eq!(
+        vec![
+            entries4[0].clone(),
+            TimeEntry {
+                start: entries4[1].clone().start,
+                end: None,
+            },
+        ],
+        timecard4.entries,
+    );
+    assert!(timecard4.is_clocked_in());
+    assert!(!timecard4.is_clocked_out());
+
+    let entries5 = vec![
+        TimeEntry {
+            start: time - Duration::hours(8),
+            end: Some(time - Duration::hours(4)),
+        },
+        TimeEntry {
+            start: time - Duration::hours(3),
+            end: None,
+        },
+    ];
+    let mut timecard5 = Timecard::new(entries5.clone())?;
+    assert_eq!(entries5, timecard5.entries);
+    assert!(timecard5.is_clocked_in());
+    assert!(!timecard5.is_clocked_out());
+
+    timecard5.undo()?;
+    assert_eq!(vec![entries5[0].clone()], timecard5.entries);
+    assert!(!timecard5.is_clocked_in());
+    assert!(timecard5.is_clocked_out());
 
     Ok(())
 }
@@ -476,7 +573,116 @@ fn it_undos() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn it_gets_duration_worked() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
-    todo!();
+    
+    let entries1 = vec![
+        TimeEntry {
+            start: time - Duration::hours(8),
+            end: Some(time - Duration::hours(4)),
+        },
+    ];
+    let timecard1 = Timecard::new(entries1)?;
+    assert_eq!(Duration::hours(4), timecard1.get_duration_worked(&time, true));
+    assert_eq!(Duration::hours(4), timecard1.get_duration_worked(&time, false));
+
+    let entries2 = vec![
+        TimeEntry {
+            start: time - Duration::hours(8),
+            end: Some(time - Duration::hours(5)),
+        },
+        TimeEntry {
+            start: time - Duration::hours(4),
+            end: Some(time.clone()),
+        },
+    ];
+    let timecard2 = Timecard::new(entries2)?;
+    assert_eq!(Duration::hours(7), timecard2.get_duration_worked(&time, true));
+    assert_eq!(Duration::hours(7), timecard2.get_duration_worked(&time, false));
+
+    let now = Local::now();
+    let entries3 = vec![
+        TimeEntry {
+            start: now - Duration::hours(8),
+            end: Some(now - Duration::minutes(15)),
+        },
+        TimeEntry {
+            start: now - Duration::minutes(10),
+            end: None,
+        },
+    ];
+    let timecard3 = Timecard::new(entries3)?;
+    assert_eq!(Duration::hours(8) - Duration::minutes(5), timecard3.get_duration_worked(&now, true));
+    assert_eq!(Duration::hours(8) - Duration::minutes(15), timecard3.get_duration_worked(&now, false));
+
+    let entries4 = vec![
+        TimeEntry {
+            start: time - Duration::days(1) - Duration::hours(8),
+            end: Some(time - Duration::hours(1)),
+        },
+    ];
+    let timecard4 = Timecard::new(entries4)?;
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecard4.get_duration_worked(&time, true));
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecard4.get_duration_worked(&time, false));
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecard4.get_duration_worked(&(time - Duration::days(1)), true));
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecard4.get_duration_worked(&(time - Duration::days(1)), false));
+
+    let entries5 = vec![
+        TimeEntry {
+            start: time - Duration::days(1) - Duration::hours(9),
+            end: Some(time - Duration::days(1) - Duration::hours(5)),
+        },
+        TimeEntry {
+            start: time - Duration::days(1) - Duration::hours(4),
+            end: Some(time - Duration::days(1)),
+        },
+        TimeEntry {
+            start: time - Duration::hours(9),
+            end: Some(time - Duration::hours(5)),
+        },
+        TimeEntry {
+            start: time - Duration::hours(3),
+            end: Some(time.clone()),
+        },
+    ];
+    let timecard5 = Timecard::new(entries5)?;
+    assert_eq!(Duration::hours(8), timecard5.get_duration_worked(&(time - Duration::days(1)), true));
+    assert_eq!(Duration::hours(8), timecard5.get_duration_worked(&(time - Duration::days(1)), false));
+    assert_eq!(Duration::hours(9), timecard5.get_duration_worked(&time, true));
+    assert_eq!(Duration::hours(9), timecard5.get_duration_worked(&time, false));
+
+    let now = Local::now();
+    let entries6 = vec![
+        TimeEntry {
+            start: time - Duration::days(1) - Duration::hours(9),
+            end: Some(time - Duration::days(1) - Duration::hours(5)),
+        },
+        TimeEntry {
+            start: time - Duration::days(1) - Duration::hours(4),
+            end: Some(time - Duration::days(1)),
+        },
+        TimeEntry {
+            start: time - Duration::hours(9),
+            end: Some(time - Duration::hours(5)),
+        },
+        TimeEntry {
+            start: time - Duration::hours(3),
+            end: Some(time.clone()),
+        },
+        TimeEntry {
+            start: now - Duration::hours(8),
+            end: Some(time - Duration::hours(4)),
+        },
+        TimeEntry {
+            start: now - Duration::hours(3),
+            end: None,
+        },
+    ];
+    let timecard6 = Timecard::new(entries6)?;
+    assert_eq!(Duration::hours(8), timecard6.get_duration_worked(&(time - Duration::days(1)), true));
+    assert_eq!(Duration::hours(8), timecard6.get_duration_worked(&(time - Duration::days(1)), false));
+    assert_eq!(Duration::hours(9), timecard6.get_duration_worked(&time, true));
+    assert_eq!(Duration::hours(9), timecard6.get_duration_worked(&time, false));
+    assert_eq!(Duration::hours(7), timecard6.get_duration_worked(&now, true));
+    assert_eq!(Duration::hours(4), timecard6.get_duration_worked(&now, false));
 
     Ok(())
 }
