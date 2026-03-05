@@ -168,15 +168,45 @@ impl Timecard {
     }
 
     pub fn get_duration_worked(&self, date: &DateTime<Local>, include_now: bool) -> Duration {
-        todo!()
+        let entries = self.filter_by_day(date);
+
+        let mut total_duration = Duration::zero();
+        for entry in entries {
+            let Some(end_time) = get_last_time_or_now(entry.end, entry.start, include_now) else { continue };
+            total_duration += end_time - entry.start;
+        }
+
+        total_duration
     }
 
     pub fn get_duration_on_break(&self, date: &DateTime<Local>, include_now: bool) -> Duration {
-        todo!()
+        let entries = self.filter_by_day(date);
+
+        let mut total_duration = Duration::zero();
+        for (i, &current_entry) in entries.iter().enumerate() {
+            let next_entry = entries.get(i + 1);
+
+            if let Some(current_end) = current_entry.end {
+                let next_entry_start = next_entry.map(|e| e.start);
+                let Some(next_start_time) = get_last_time_or_now(next_entry_start, current_end, include_now) else { continue };
+                total_duration += next_start_time - current_end
+            }
+        }
+
+        total_duration
     }
 
-    pub fn get_expected_end_time(&self, duration_to_work: &Duration, date: &DateTime<Local>) -> DateTime<Local> {
-        todo!()
+    pub fn get_expected_end_time(&self, duration_to_work: Duration, date: &DateTime<Local>) -> Option<DateTime<Local>> {
+        let time_on_break = self.get_duration_on_break(date, true);
+
+        let entries = self.filter_by_day(date);
+        let now = Local::now();
+        if entries.is_empty() && date.num_days_from_ce() != now.num_days_from_ce() {
+            return None
+        }
+
+        let start_time = entries.first().map(|e| e.start).unwrap_or(now);
+        Some(start_time + duration_to_work + time_on_break)
     }
 }
 
@@ -208,4 +238,15 @@ impl FromStr for Timecard {
         // TODO: Remove unwrap call
         Ok(Timecard::new(new_entries).unwrap())
     }
+}
+
+fn get_last_time_or_now(time: Option<DateTime<Local>>, previous_time: DateTime<Local>, include_now: bool) -> Option<DateTime<Local>> {
+    if time.is_none() {
+        let now = Local::now();
+        if include_now && now.num_days_from_ce() == previous_time.num_days_from_ce() {
+            return Some(now);
+        }
+    }
+
+    time
 }
