@@ -402,7 +402,7 @@ fn it_clocks_in() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!timecard1.is_clocked_in());
     assert!(timecard1.is_clocked_out());
 
-    timecard1.clock_in(&time)?;
+    timecard1.clock_in(time.clone())?;
 
     assert_eq!(
         vec![TimeEntry { start: time, end: None }],
@@ -422,7 +422,7 @@ fn it_clocks_in() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!timecard2.is_clocked_in());
     assert!(timecard2.is_clocked_out());
 
-    timecard2.clock_in(&time)?;
+    timecard2.clock_in(time.clone())?;
 
     assert_eq!(
         vec![
@@ -448,11 +448,11 @@ fn it_clocks_in() -> Result<(), Box<dyn std::error::Error>> {
     assert!(timecard3.is_clocked_in());
     assert!(!timecard3.is_clocked_out());
 
-    let result3 = timecard3.clock_in(&time);
+    let result3 = timecard3.clock_in(time.clone());
     // TODO: Assert specific error
     assert!(result3.is_err());
 
-    let result4 = timecard3.clock_in(&(Local::now() + Duration::seconds(1)));
+    let result4 = timecard3.clock_in(Local::now() + Duration::seconds(1));
     // TODO: Assert specific error
     assert!(result4.is_err());
 
@@ -469,7 +469,7 @@ fn it_clocks_out() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!timecard1.is_clocked_in());
     assert!(timecard1.is_clocked_out());
 
-    let result1 = timecard1.clock_out(&time);
+    let result1 = timecard1.clock_out(time.clone());
     // TODO: Assert specific error
     assert!(result1.is_err());
 
@@ -484,7 +484,7 @@ fn it_clocks_out() -> Result<(), Box<dyn std::error::Error>> {
     assert!(timecard2.is_clocked_in());
     assert!(!timecard2.is_clocked_out());
 
-    timecard2.clock_out(&time)?;
+    timecard2.clock_out(time.clone())?;
     assert_eq!(
         vec![
             TimeEntry {
@@ -497,7 +497,7 @@ fn it_clocks_out() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!timecard2.is_clocked_in());
     assert!(timecard2.is_clocked_out());
 
-    let result2 = timecard2.clock_out(&time);
+    let result2 = timecard2.clock_out(time.clone());
     // TODO: Assert specific error (already clocked out)
     assert!(result2.is_err());
 
@@ -516,7 +516,7 @@ fn it_clocks_out() -> Result<(), Box<dyn std::error::Error>> {
     assert!(timecard3.is_clocked_in());
     assert!(!timecard3.is_clocked_out());
 
-    timecard3.clock_out(&time)?;
+    timecard3.clock_out(time.clone())?;
     assert_eq!(
         vec![
             timecard3.entries[0].clone(),
@@ -539,11 +539,11 @@ fn it_clocks_out() -> Result<(), Box<dyn std::error::Error>> {
     assert!(timecard4.is_clocked_in());
     assert!(!timecard4.is_clocked_out());
 
-    let result4a = timecard4.clock_out(&(now + Duration::hours(1)));
+    let result4a = timecard4.clock_out(now + Duration::hours(1) );
     // TODO: Assert specific error (time in future)
     assert!(result4a.is_err());
 
-    let result4b = timecard4.clock_out(&(now - Duration::hours(5)));
+    let result4b = timecard4.clock_out(now - Duration::hours(5) );
     // TODO: Assert specific error (time before start)
     assert!(result4b.is_err());
 

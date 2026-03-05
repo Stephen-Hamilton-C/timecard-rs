@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use chrono::{DateTime, Duration, Local};
+use chrono::{DateTime, Datelike, Duration, Local};
 use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
@@ -89,12 +89,18 @@ impl Timecard {
         !self.is_clocked_in()
     }
 
-    pub fn filter_by_day(&self, date: &DateTime<Local>) -> &[TimeEntry] {
-        todo!()
+    pub fn filter_by_day(&self, date: &DateTime<Local>) -> Vec<&TimeEntry> {
+        self.filter_by_date_range(date, date)
     }
 
-    pub fn filter_by_date_range(&self, from_date: &DateTime<Local>, to_date: &DateTime<Local>) -> &[TimeEntry] {
-        todo!()
+    pub fn filter_by_date_range(&self, from_date: &DateTime<Local>, to_date: &DateTime<Local>) -> Vec<&TimeEntry> {
+        let from_day = from_date.num_days_from_ce();
+        let to_day = to_date.num_days_from_ce();
+
+        self.entries.iter().filter(|&entry| {
+            let start_day = entry.start.num_days_from_ce();
+            start_day <= to_day && entry.end.map_or(true, |end| end.num_days_from_ce() >= from_day)
+        }).collect()
     }
 
     pub fn clear(&mut self) {
@@ -102,18 +108,63 @@ impl Timecard {
     }
 
     // TODO: Error should not be string
-    pub fn clock_in(&mut self, time: &DateTime<Local>) -> Result<(), String> {
-        todo!()
+    pub fn clock_in(&mut self, time: DateTime<Local>) -> Result<(), &'static str> {
+        if self.is_clocked_in() {
+            return Err("Already clocked in");
+        }
+
+        let now = Local::now();
+        if time > now {
+            return Err("Cannot clock in into the future!");
+        }
+
+        if let Some(last_entry) = self.entries.last() {
+            // If we're clocked out, it's impossible for the last end entry to be None
+            if time < last_entry.end.unwrap() {
+                return Err("Cannot clock in before last entry!");
+            }
+        }
+
+        let entry = TimeEntry {
+            start: time,
+            end: None,
+        };
+        self.entries.push(entry);
+
+        Ok(())
     }
 
     // TODO: Error should not be string
-    pub fn clock_out(&mut self, time: &DateTime<Local>) -> Result<(), String> {
-        todo!()
+    pub fn clock_out(&mut self, time: DateTime<Local>) -> Result<(), &'static str> {
+        if self.is_clocked_out() {
+            return Err("Already clocked out")
+        }
+
+        let now = Local::now();
+        if time > now {
+            return Err("Cannot clock out into the future!");
+        }
+
+        // We're clocked in, so there must be an entry, and the last end entry is None
+        let last_entry = self.entries.last_mut().unwrap();
+        if time < last_entry.start {
+            return Err("Cannot clock out before last entry!");
+        }
+        last_entry.end = Some(time);
+        
+        Ok(())
     }
 
     // TODO: Error should not be string
-    pub fn undo(&mut self) -> Result<(), String> {
-        todo!()
+    pub fn undo(&mut self) -> Result<(), &'static str> {
+        let last_entry = self.entries.last_mut().ok_or("There's nothing left to undo!")?;
+        if last_entry.end.is_none() {
+            self.entries.pop();
+        } else {
+            last_entry.end = None;
+        }
+
+        Ok(())
     }
 
     pub fn get_duration_worked(&self, date: &DateTime<Local>, include_now: bool) -> Duration {
