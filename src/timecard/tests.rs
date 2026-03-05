@@ -798,5 +798,16 @@ fn it_gets_expected_end_time() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(time - Duration::days(1), timecards[3].get_expected_end_time(&Duration::hours(8), &(time - Duration::days(1))));
 
+    assert_eq!(time - Duration::days(1), timecards[4].get_expected_end_time(&Duration::hours(8), &(time - Duration::days(1))));
+    assert_eq!(time + Duration::hours(1), timecards[4].get_expected_end_time(&Duration::hours(8), &time));
+
+    assert_eq!(time - Duration::days(1) + Duration::hours(1), timecards[5].get_expected_end_time(&Duration::hours(8), &(time - Duration::days(1))));
+    assert_eq!(time + Duration::hours(1), timecards[5].get_expected_end_time(&Duration::hours(8), &time));
+    assert_eq!(now + Duration::hours(1), timecards[5].get_expected_end_time(&Duration::hours(8), &now));
+
+    assert_eq!(now + Duration::hours(4) - Duration::minutes(16), timecards[6].get_expected_end_time(&Duration::hours(4), &now));
+
+    assert_eq!(now + Duration::hours(2) - Duration::minutes(17), timecards[7].get_expected_end_time(&Duration::hours(2), &now));
+
     Ok(())
 }
