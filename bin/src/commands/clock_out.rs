@@ -3,7 +3,7 @@ use clap::Args;
 use colored::Colorize;
 use timecard::Timecard;
 
-use crate::{AppPaths, format, traits::TimecardFile};
+use crate::{AppPaths, format, traits::{Loadable, Saveable}};
 
 
 #[derive(Args, Debug)]
