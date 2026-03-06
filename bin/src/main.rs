@@ -1,6 +1,7 @@
 mod commands;
+mod traits;
 
-use std::fs;
+use std::{fs, path::PathBuf};
 
 use clap::Parser;
 use platform_dirs::AppDirs;
@@ -21,25 +22,35 @@ struct Cli {
     command: Option<Commands>,
 }
 
+#[derive(Debug)]
+struct AppPaths {
+    config: PathBuf,
+    timecard: PathBuf,
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     let app_dirs = AppDirs::new(Some("timecard"), false)
         .ok_or("Failed to determine config file path")?;
     fs::create_dir_all(&app_dirs.config_dir)?;
-    let config_path = app_dirs.config_dir.join("config.toml");
+    fs::create_dir_all(&app_dirs.data_dir)?;
+    let paths = AppPaths {
+        config: app_dirs.config_dir.join("config.toml"),
+        timecard: app_dirs.data_dir.join("timecard.json"),
+    };
+    println!("{:?}", paths);
 
     // TODO: Create config with default if it doesn't exist
     // TODO: Load config and pass it into commands
 
     match &cli.command {
-        Some(Commands::Status) => commands::status(),
-        Some(Commands::In (args)) => commands::clock_in(args),
-        Some(Commands::Out (args)) => commands::clock_out(args),
+        Some(Commands::Status) | None => commands::status(paths),
+        Some(Commands::In (args)) => commands::clock_in(args, paths),
+        Some(Commands::Out (args)) => commands::clock_out(args,paths),
         Some(Commands::Clean (args)) => commands::clean(args),
         Some(Commands::Log (args)) => commands::log(args),
         Some(Commands::Undo (args)) => commands::undo(args),
-        None => commands::status(),
     }
 
     Ok(())
