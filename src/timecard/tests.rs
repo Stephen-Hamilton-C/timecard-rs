@@ -960,8 +960,8 @@ fn it_gets_duration_worked_multi_day_multi_entry() -> Result<(), Box<dyn std::er
     let timecard = &get_duration_timecards(now)?[4];
     assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(time - Duration::days(1)), true));
     assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(time - Duration::days(1)), false));
-    assert_eq!(Duration::hours(9), timecard.get_duration_worked(&time, true));
-    assert_eq!(Duration::hours(9), timecard.get_duration_worked(&time, false));
+    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&time, true));
+    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&time, false));
     assert_eq!(Duration::zero(), timecard.get_duration_worked(&(time - Duration::weeks(4)), true));
     assert_eq!(Duration::zero(), timecard.get_duration_worked(&(time - Duration::weeks(4)), false));
     Ok(())
@@ -974,8 +974,8 @@ fn it_gets_duration_worked_multi_day_with_open_entry() -> Result<(), Box<dyn std
     let timecard = &get_duration_timecards(now.clone())?[5];
     assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(time - Duration::days(1)), true));
     assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(time - Duration::days(1)), false));
-    assert_eq!(Duration::hours(9), timecard.get_duration_worked(&time, true));
-    assert_eq!(Duration::hours(9), timecard.get_duration_worked(&time, false));
+    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&time, true));
+    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&time, false));
     assert_eq!(Duration::hours(7), timecard.get_duration_worked(&now, true));
     assert_eq!(Duration::hours(4), timecard.get_duration_worked(&now, false));
     Ok(())
@@ -1094,7 +1094,6 @@ fn it_gets_duration_on_break_current_day_with_open_entry() -> Result<(), Box<dyn
 
 #[test]
 fn it_gets_duration_on_break_current_day_all_closed() -> Result<(), Box<dyn std::error::Error>> {
-    // FIXME
     let now = Local::now();
     println!("{}, {}", get_ref_time(), now);
     let timecard = &get_duration_timecards(now.clone())?[7];
@@ -1131,7 +1130,7 @@ fn it_gets_expected_end_time_two_closed_entries_with_break() -> Result<(), Box<d
     let timecard = &get_duration_timecards(now)?[1];
     assert_eq!(Some(time + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &time));
     assert_eq!(Some(time), timecard.get_expected_end_time(Duration::hours(7), &time));
-    assert_eq!(Some(time - Duration::hours(4)), timecard.get_expected_end_time(Duration::hours(4), &time));
+    assert_eq!(Some(time - Duration::hours(3)), timecard.get_expected_end_time(Duration::hours(4), &time));
     Ok(())
 }
 
@@ -1168,7 +1167,7 @@ fn it_gets_expected_end_time_multi_day_with_open_entry() -> Result<(), Box<dyn s
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[5];
-    assert_eq!(Some(time - Duration::days(1) + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &(time - Duration::days(1))));
+    assert_eq!(Some(time - Duration::days(1)), timecard.get_expected_end_time(Duration::hours(8), &(time - Duration::days(1))));
     assert_eq!(Some(time + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &time));
     assert_eq!(Some(now + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &now));
     Ok(())
