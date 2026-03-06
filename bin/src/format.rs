@@ -1,5 +1,7 @@
 use chrono::{DateTime, Duration, Local, NaiveTime};
 
+use crate::config::Config;
+
 
 // TODO: Read from config
 pub fn time(datetime: &DateTime<Local>) -> String {
@@ -23,15 +25,22 @@ pub fn datetime(datetime: &DateTime<Local>) -> String {
 }
 
 pub fn duration(duration: &Duration) -> String {
-    let fmt = "%ht hours";
+    let config = Config::get();
+    let fmt = &config.duration_format;
 
+    let hours = duration.num_hours();
+    let minutes = duration.num_minutes() - hours * 60;
     let seconds = duration.num_seconds();
-    let hours = (seconds as f64 / 3600.0).round();
+    let hours_rounded = (seconds as f64 / 3600.0).round();
     let hours_tenths = (seconds as f64 / 360.0).round() / 10.0;
     fmt.replace("%ht", &hours_tenths.to_string())
         // .replace("%hq", &hours_quarters.to_string())
         // .replace("%hh", &hours_halves.to_string())
         .replace("%HH", &hours.to_string())
+        .replace("%HR", &hours_rounded.to_string())
+        .replace("%MM", &minutes.to_string())
+        .replace(">>H", &format!("{:02}", hours))
+        .replace(">>M", &format!("{:02}", minutes))
 }
 
 pub fn from_input(input: &str) -> Option<DateTime<Local>> {

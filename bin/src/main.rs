@@ -1,4 +1,6 @@
 mod commands;
+mod config;
+mod format;
 mod traits;
 mod chrono_humantime;
 

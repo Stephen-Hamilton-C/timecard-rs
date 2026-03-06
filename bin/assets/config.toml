@@ -1,0 +1,4 @@
+use_24_hours = false
+duration_format = "%HH hours, %MM minutes"
+work_duration = "8 hours"
+entry_lifetime_days = 30

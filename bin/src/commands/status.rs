@@ -1,12 +1,14 @@
-use chrono::{Duration, Local};
+use chrono::Local;
 use colored::Colorize;
 use timecard::Timecard;
 
-use crate::{AppPaths, format, traits::TimecardFile};
+use crate::{AppPaths, format, traits::Loadable, config::Config};
 
 pub fn status(paths: AppPaths) {
     // TODO: expect
     let timecard = Timecard::load(&paths.timecard).expect("Failed to load Timecard");
+    // TODO: expect
+    let config = Config::load(&paths.config).expect("Failed to load config");
     let now = Local::now();
     let entries = timecard.filter_by_day(&now);
 
@@ -23,8 +25,7 @@ pub fn status(paths: AppPaths) {
 
     let duration_worked = timecard.get_duration_worked(&now, true);
     let duration_on_break = timecard.get_duration_on_break(&now, true);
-    // TODO: get expected work duration from config
-    let end_time = timecard.get_expected_end_time(Duration::hours(8), &now).unwrap();
+    let end_time = timecard.get_expected_end_time(config.work_duration, &now).unwrap();
     println!("Worked for {}", format::duration(&duration_worked));
     println!("On break for {}", format::duration(&duration_on_break));
     println!("Expected end time: {}", format::time(&end_time));
