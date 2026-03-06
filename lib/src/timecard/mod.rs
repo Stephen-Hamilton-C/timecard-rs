@@ -46,14 +46,22 @@ impl FromStr for TimeEntry {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Timecard {
     entries: Vec<TimeEntry>,
+
+    #[serde(skip_serializing)]
     now_override: Option<DateTime<Local>>,
 }
 
 impl Timecard {
     pub fn new(entries: Vec<TimeEntry>) -> Result<Timecard, &'static str> {
+        let timecard = Timecard { entries, now_override: None };
+        timecard.validate()?;
+        Ok(timecard)
+    }
+
+    pub fn validate(&self) -> Result<(), &'static str> {
         let mut prev_time = DateTime::UNIX_EPOCH.with_timezone(&Local);
-        let entry_count = entries.len();
-        for (i, entry) in entries.iter().enumerate() {
+        let entry_count = self.entries.len();
+        for (i, entry) in self.entries.iter().enumerate() {
             let is_last_entry = i == entry_count - 1;
             if entry.end.is_none() && !is_last_entry {
                 // TODO: Throw error
@@ -74,7 +82,8 @@ impl Timecard {
                 prev_time = entry_end;
             }
         }
-        Ok(Timecard { entries, now_override: None })
+
+        Ok(())
     }
 
     fn now(&self) -> DateTime<Local> {
