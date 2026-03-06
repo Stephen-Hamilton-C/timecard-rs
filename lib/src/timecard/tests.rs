@@ -1114,6 +1114,7 @@ fn it_gets_duration_on_break_empty_timecard() -> Result<(), Box<dyn std::error::
     Ok(())
 }
 
+// TODO: Need a test for None
 #[test]
 fn it_gets_expected_end_time_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
