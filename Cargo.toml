@@ -1,11 +1,9 @@
-[package]
-name = "timecard"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = ["lib", "bin"]
+resolver = "3"
+readme = "README.md"
+description = "times your card"
 
-[dependencies]
+[workspace.dependencies]
 chrono = { version = "0.4.44", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
-
-[target.'cfg(bin)'.dependencies]
-serde_json = "1.0.149"
