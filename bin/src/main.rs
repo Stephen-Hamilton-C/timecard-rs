@@ -1,5 +1,6 @@
 mod commands;
 mod traits;
+mod format;
 
 use std::{fs, path::PathBuf};
 

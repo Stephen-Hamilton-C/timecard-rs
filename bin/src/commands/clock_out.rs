@@ -3,7 +3,7 @@ use clap::Args;
 use colored::Colorize;
 use timecard::Timecard;
 
-use crate::{AppPaths, traits::TimecardFile};
+use crate::{AppPaths, format, traits::TimecardFile};
 
 
 #[derive(Args, Debug)]
@@ -21,5 +21,5 @@ pub fn clock_out(args: &OutArgs, paths: AppPaths) {
     // TODO: expect
     timecard.save(&paths.timecard).expect("Failed to save Timecard");
 
-    println!("Clocked {} at {}", "out".red(), time.to_string().red());
+    println!("Clocked {} at {}", "out".red(), format::time(&time).red());
 }
