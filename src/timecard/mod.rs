@@ -46,6 +46,7 @@ impl FromStr for TimeEntry {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Timecard {
     entries: Vec<TimeEntry>,
+    now_override: Option<DateTime<Local>>,
 }
 
 impl Timecard {
@@ -73,7 +74,11 @@ impl Timecard {
                 prev_time = entry_end;
             }
         }
-        Ok(Timecard { entries })
+        Ok(Timecard { entries, now_override: None })
+    }
+
+    fn now(&self) -> DateTime<Local> {
+        self.now_override.unwrap_or(Local::now())
     }
 
     pub fn entries(&self) -> &[TimeEntry] {
@@ -113,7 +118,7 @@ impl Timecard {
             return Err("Already clocked in");
         }
 
-        let now = Local::now();
+        let now = self.now();
         if time > now {
             return Err("Cannot clock in into the future!");
         }
@@ -140,7 +145,7 @@ impl Timecard {
             return Err("Already clocked out")
         }
 
-        let now = Local::now();
+        let now = self.now();
         if time > now {
             return Err("Cannot clock out into the future!");
         }
@@ -172,7 +177,7 @@ impl Timecard {
 
         let mut total_duration = Duration::zero();
         for entry in entries {
-            let Some(end_time) = get_last_time_or_now(entry.end, entry.start, include_now) else { continue };
+            let Some(end_time) = self.get_last_time_or_now(entry.end, entry.start, include_now) else { continue };
             total_duration += end_time - entry.start;
         }
 
@@ -188,7 +193,7 @@ impl Timecard {
 
             if let Some(current_end) = current_entry.end {
                 let next_entry_start = next_entry.map(|e| e.start);
-                let Some(next_start_time) = get_last_time_or_now(next_entry_start, current_end, include_now) else { continue };
+                let Some(next_start_time) = self.get_last_time_or_now(next_entry_start, current_end, include_now) else { continue };
                 total_duration += next_start_time - current_end
             }
         }
@@ -200,13 +205,24 @@ impl Timecard {
         let time_on_break = self.get_duration_on_break(date, true);
 
         let entries = self.filter_by_day(date);
-        let now = Local::now();
+        let now = self.now();
         if entries.is_empty() && date.num_days_from_ce() != now.num_days_from_ce() {
             return None
         }
 
         let start_time = entries.first().map(|e| e.start).unwrap_or(now);
         Some(start_time + duration_to_work + time_on_break)
+    }
+
+    fn get_last_time_or_now(&self, time: Option<DateTime<Local>>, previous_time: DateTime<Local>, include_now: bool) -> Option<DateTime<Local>> {
+        if time.is_none() {
+            let now = self.now();
+            if include_now && now.num_days_from_ce() == previous_time.num_days_from_ce() {
+                return Some(now);
+            }
+        }
+
+        time
     }
 }
 
@@ -238,15 +254,4 @@ impl FromStr for Timecard {
         // TODO: Remove unwrap call
         Ok(Timecard::new(new_entries).unwrap())
     }
-}
-
-fn get_last_time_or_now(time: Option<DateTime<Local>>, previous_time: DateTime<Local>, include_now: bool) -> Option<DateTime<Local>> {
-    if time.is_none() {
-        let now = Local::now();
-        if include_now && now.num_days_from_ce() == previous_time.num_days_from_ce() {
-            return Some(now);
-        }
-    }
-
-    time
 }

@@ -773,7 +773,7 @@ fn it_undo_removes_open_entry_with_prior_closed() -> Result<(), Box<dyn std::err
 fn get_duration_timecards(now: DateTime<Local>) -> Result<Vec<Timecard>, Box<dyn std::error::Error>> {
     let time = get_ref_time();
 
-    let timecard0 = Timecard::new(
+    let mut timecard0 = Timecard::new(
         vec![
             TimeEntry {
                 start: time - Duration::hours(8),
@@ -782,7 +782,7 @@ fn get_duration_timecards(now: DateTime<Local>) -> Result<Vec<Timecard>, Box<dyn
         ]
     )?;
 
-    let timecard1 = Timecard::new(vec![
+    let mut timecard1 = Timecard::new(vec![
         TimeEntry {
             start: time - Duration::hours(8),
             end: Some(time - Duration::hours(5)),
@@ -793,7 +793,7 @@ fn get_duration_timecards(now: DateTime<Local>) -> Result<Vec<Timecard>, Box<dyn
         },
     ])?;
 
-    let timecard2 = Timecard::new(vec![
+    let mut timecard2 = Timecard::new(vec![
         TimeEntry {
             start: now - Duration::hours(8),
             end: Some(now - Duration::minutes(15)),
@@ -804,14 +804,14 @@ fn get_duration_timecards(now: DateTime<Local>) -> Result<Vec<Timecard>, Box<dyn
         },
     ])?;
 
-    let timecard3 = Timecard::new(vec![
+    let mut timecard3 = Timecard::new(vec![
         TimeEntry {
             start: time - Duration::days(1) - Duration::hours(8),
             end: Some(time - Duration::hours(1)),
         },
     ])?;
 
-    let timecard4 = Timecard::new(vec![
+    let mut timecard4 = Timecard::new(vec![
         TimeEntry {
             start: time - Duration::days(1) - Duration::hours(9),
             end: Some(time - Duration::days(1) - Duration::hours(5)),
@@ -830,7 +830,7 @@ fn get_duration_timecards(now: DateTime<Local>) -> Result<Vec<Timecard>, Box<dyn
         },
     ])?;
 
-    let timecard5 = Timecard::new(vec![
+    let mut timecard5 = Timecard::new(vec![
         TimeEntry {
             start: time - Duration::days(1) - Duration::hours(9),
             end: Some(time - Duration::days(1) - Duration::hours(5)),
@@ -849,7 +849,7 @@ fn get_duration_timecards(now: DateTime<Local>) -> Result<Vec<Timecard>, Box<dyn
         },
         TimeEntry {
             start: now - Duration::hours(8),
-            end: Some(time - Duration::hours(4)),
+            end: Some(now - Duration::hours(4)),
         },
         TimeEntry {
             start: now - Duration::hours(3),
@@ -857,7 +857,7 @@ fn get_duration_timecards(now: DateTime<Local>) -> Result<Vec<Timecard>, Box<dyn
         },
     ])?;
 
-    let timecard6 = Timecard::new(vec![
+    let mut timecard6 = Timecard::new(vec![
         TimeEntry {
             start: now - Duration::minutes(30),
             end: Some(now - Duration::minutes(25)),
@@ -872,7 +872,7 @@ fn get_duration_timecards(now: DateTime<Local>) -> Result<Vec<Timecard>, Box<dyn
         },
     ])?;
 
-    let timecard7 = Timecard::new(vec![
+    let mut timecard7 = Timecard::new(vec![
         TimeEntry {
             start: now - Duration::minutes(30),
             end: Some(now - Duration::minutes(25)),
@@ -887,7 +887,17 @@ fn get_duration_timecards(now: DateTime<Local>) -> Result<Vec<Timecard>, Box<dyn
         },
     ])?;
 
-    let timecard8 = Timecard::new(vec![])?;
+    let mut timecard8 = Timecard::new(vec![])?;
+
+    timecard0.now_override = Some(now);
+    timecard1.now_override = Some(now);
+    timecard2.now_override = Some(now);
+    timecard3.now_override = Some(now);
+    timecard4.now_override = Some(now);
+    timecard5.now_override = Some(now);
+    timecard6.now_override = Some(now);
+    timecard7.now_override = Some(now);
+    timecard8.now_override = Some(now);
 
     Ok(vec![
         timecard0,
@@ -1084,7 +1094,9 @@ fn it_gets_duration_on_break_current_day_with_open_entry() -> Result<(), Box<dyn
 
 #[test]
 fn it_gets_duration_on_break_current_day_all_closed() -> Result<(), Box<dyn std::error::Error>> {
+    // FIXME
     let now = Local::now();
+    println!("{}, {}", get_ref_time(), now);
     let timecard = &get_duration_timecards(now.clone())?[7];
     assert_eq!(Duration::minutes(13), timecard.get_duration_on_break(&now, true));
     assert_eq!(Duration::minutes(11), timecard.get_duration_on_break(&now, false));
