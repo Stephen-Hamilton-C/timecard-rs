@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, Local, NaiveDate, NaiveTime, TimeZone};
+use chrono::{DateTime, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
 use crate::config::Config;
 
@@ -59,6 +59,11 @@ pub fn time_from_input(input: &str) -> Result<DateTime<Local>, String> {
         return naive_dt.and_local_timezone(Local).single().ok_or("Failed to parse NaiveTime".into())
     }
 
+    const DATETIME_FORMATS: &[&str] = &["%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"];
+    let datetime = DATETIME_FORMATS.iter().find_map(|fmt| NaiveDateTime::parse_from_str(input, fmt).ok());
+    if let Some(specific_datetime) = datetime {
+        return specific_datetime.and_local_timezone(Local).single().ok_or("Failed to parse NaiveDateTime".into())
+    }
 
     if let Ok(minutes) = input.parse::<i64>() {
         return Ok(Local::now() - Duration::minutes(minutes))
