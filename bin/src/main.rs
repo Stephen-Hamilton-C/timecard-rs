@@ -47,10 +47,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(Commands::Status) | None => commands::status(&paths),
         Some(Commands::In (args)) => commands::clock_in(args, &paths),
         Some(Commands::Out (args)) => commands::clock_out(args, &paths),
-        Some(Commands::Clean (args)) => commands::clean(args),
         Some(Commands::Log (args)) => commands::log(args, &paths),
         Some(Commands::Undo) => commands::undo(&paths),
     }
+
+    // TODO: clean
 
     Ok(())
 }
