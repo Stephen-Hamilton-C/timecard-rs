@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local};
-use clap::Args;
+use clap::{Args, builder::ValueParser};
 use colored::Colorize;
 use timecard::Timecard;
 
@@ -8,6 +8,7 @@ use crate::{AppPaths, format, traits::{Loadable, Saveable}};
 
 #[derive(Args, Debug)]
 pub struct OutArgs {
+    #[arg(value_parser = ValueParser::new(format::time_from_input))]
     time: Option<DateTime<Local>>,
 }
 
