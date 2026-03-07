@@ -3,7 +3,7 @@ use std::{fmt, str::FromStr};
 use chrono::{DateTime, Datelike, Duration, Local};
 use serde::{Deserialize, Serialize};
 
-use crate::error::{ClockError, UndoError, ValidationError};
+use crate::error::{ClockError, TimecardFromStrError, UndoError, ValidationError};
 
 #[cfg(test)]
 mod tests;
@@ -29,7 +29,6 @@ impl FromStr for TimeEntry {
     type Err = chrono::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // TODO: Remove unwrap calls
         let data_split: Vec<&str> = s.split(",").collect();
 
         let start = DateTime::parse_from_rfc3339(data_split[0])?.with_timezone(&Local);
@@ -243,7 +242,7 @@ impl fmt::Display for Timecard {
 }
 
 impl FromStr for Timecard {
-    type Err = chrono::ParseError;
+    type Err = TimecardFromStrError;
     
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut new_entries = vec![];
@@ -257,7 +256,6 @@ impl FromStr for Timecard {
             new_entries.push(entry);
         }
 
-        // TODO: Remove unwrap call
-        Ok(Timecard::new(new_entries).unwrap())
+        Ok(Timecard::new(new_entries)?)
     }
 }

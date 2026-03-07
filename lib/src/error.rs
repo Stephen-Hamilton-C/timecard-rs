@@ -1,12 +1,9 @@
-use std::{fmt::Display, io};
+use std::fmt::Display;
 
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum TimecardError {
-    #[error("IO error: {0}")]
-    Io(#[from] io::Error),
-
     #[error("Timecard validation error: {0}")]
     TimecardValidation(#[from] ValidationError),
 
@@ -15,6 +12,15 @@ pub enum TimecardError {
 
     #[error("Timecard undo error: {0}")]
     TimecardUndoError(#[from] UndoError),
+}
+
+#[derive(Debug, Error)]
+pub enum TimecardFromStrError {
+    #[error("Timecard validation error: {0}")]
+    TimecardValidation(#[from] ValidationError),
+
+    #[error("Chrono parse error: {0}")]
+    ChronoParseError(#[from] chrono::ParseError),
 }
 
 #[derive(Debug, Error)]
