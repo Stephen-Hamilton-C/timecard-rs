@@ -14,12 +14,12 @@ pub struct OutArgs {
     time: Option<DateTime<Local>>,
 }
 
-pub fn clock_out(args: &OutArgs, timecard: &mut Timecard, timecard_path: &PathBuf) {
+pub fn clock_out(args: &OutArgs, timecard: &mut Timecard, timecard_path: &PathBuf) -> anyhow::Result<()> {
     let time = args.time.unwrap_or(Local::now());
-    // TODO: expect
-    timecard.clock_out(time).expect("Failed to clock out");
-    // TODO: expect
-    timecard.save(timecard_path).expect("Failed to save Timecard");
+    timecard.clock_out(time)?;
+    timecard.save(timecard_path)?;
 
     println!("Clocked {} at {}", "out".red(), format::time(&time).red());
+
+    Ok(())
 }

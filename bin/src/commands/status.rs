@@ -4,14 +4,14 @@ use timecard::Timecard;
 
 use crate::{format, config::Config};
 
-pub fn status(timecard: &Timecard) {
+pub fn status(timecard: &Timecard) -> anyhow::Result<()> {
     let config = Config::get();
     let now = Local::now();
     let entries = timecard.filter_by_day(&now);
 
     if entries.is_empty() {
         println!("{}", "No log for today".yellow());
-        return
+        return Ok(())
     } else if timecard.is_clocked_in() {
         let last_entry = entries.last().unwrap();
         println!("Clocked {} since {}", "IN".green(), format::time(&last_entry.start).green());
@@ -26,4 +26,6 @@ pub fn status(timecard: &Timecard) {
     println!("Worked for {}", format::duration(&duration_worked).green());
     println!("On break for {}", format::duration(&duration_on_break).red());
     println!("Expected end time: {}", format::time(&end_time).cyan());
+
+    Ok(())
 }

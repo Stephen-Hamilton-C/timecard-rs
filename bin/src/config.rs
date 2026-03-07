@@ -1,5 +1,6 @@
 use std::{fs, sync::OnceLock};
 
+use anyhow::Context;
 use chrono::Duration;
 use serde::Deserialize;
 use serde_valid::Validate;
@@ -63,14 +64,15 @@ fn default_entry_lifetime_days() -> Option<i64> {
 }
 
 impl Loadable<&'static Config> for Config {
-    fn load(path: &std::path::PathBuf) -> Result<&'static Config, Box<dyn std::error::Error>> {
+    fn load(path: &std::path::PathBuf) -> anyhow::Result<&'static Config> {
         if let Some(config) = INSTANCE.get() {
             return Ok(config)
         }
 
         if fs::exists(path).unwrap_or(false) {
             let config_data = fs::read_to_string(path)?;
-            let config: Config = toml::from_str(&config_data)?;
+            let config: Config = toml::from_str(&config_data)
+                .context("Failed to parse config")?;
             INSTANCE.set(config).expect("Config already loaded into memory!");
             Ok(Config::get())
         } else {

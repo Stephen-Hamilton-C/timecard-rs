@@ -94,14 +94,14 @@ fn log_for_entries(entries: &[&TimeEntry], format: OutputFormat) {
     }
 }
 
-pub fn log(args: &LogArgs, timecard: &Timecard) {
+pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
     let show_range = args.from_date.is_some() || args.to_date.is_some();
     let show_day = (args.from_date.is_none() && args.to_date.is_none()) || args.day.is_some();
 
     if args.all {
         if timecard.entries().is_empty() {
             eprintln!("{}", "No logs exist.".yellow());
-            return
+            return Ok(())
         }
 
         let entries: Vec<&TimeEntry> = timecard.entries().iter().collect();
@@ -111,7 +111,7 @@ pub fn log(args: &LogArgs, timecard: &Timecard) {
             println!("{}", "All logged entries:".bold());
             log_for_entries(&entries, OutputFormat::PrettyByDay);
         }
-        return
+        return Ok(())
     }
 
     if show_range {
@@ -156,4 +156,6 @@ pub fn log(args: &LogArgs, timecard: &Timecard) {
             }
         }
     }
+
+    Ok(())
 }
