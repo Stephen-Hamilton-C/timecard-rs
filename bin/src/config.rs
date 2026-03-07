@@ -11,8 +11,14 @@ static INSTANCE: OnceLock<Config> = OnceLock::new();
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    #[serde(default = "default_use_24_hours")]
-    pub use_24_hours: bool,
+    #[serde(default = "default_time_fmt")]
+    pub time_fmt: String,
+
+    #[serde(default = "default_date_fmt")]
+    pub date_fmt: String,
+
+    #[serde(default = "default_datetime_fmt")]
+    pub datetime_fmt: String,
 
     #[serde(default = "default_duration_format")]
     pub duration_format: String,
@@ -30,8 +36,16 @@ impl Config {
     }
 }
 
-fn default_use_24_hours() -> bool {
-    false
+fn default_time_fmt() -> String {
+    String::from("%I:%M %p")
+}
+
+fn default_date_fmt() -> String {
+    String::from("%Y-%m-%d")
+}
+
+fn default_datetime_fmt() -> String {
+    String::from("%Y-%m-%d %I:%M %p")
 }
 
 fn default_duration_format() -> String {

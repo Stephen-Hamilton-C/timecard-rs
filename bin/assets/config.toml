@@ -1,4 +1,6 @@
-use_24_hours = false
+time_fmt = "%I:%M %p"
+date_fmt = "%Y-%m-%d"
+datetime_fmt = "%Y-%m-%d %I:%M %p"
 duration_format = "%HH hours, %MM minutes"
 work_duration = "8 hours"
 entry_lifetime_days = 30

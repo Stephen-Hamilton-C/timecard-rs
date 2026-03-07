@@ -3,14 +3,21 @@ use chrono::{DateTime, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, Tim
 use crate::config::Config;
 
 
-// TODO: Read from config
 pub fn time(datetime: &DateTime<Local>) -> String {
-    let fmt = "%H:%M";
+    let config = Config::get();
+    let fmt = &config.time_fmt;
     datetime.format(fmt).to_string()
 }
 
 pub fn date(datetime: &DateTime<Local>) -> String {
-    let fmt = "%Y-%m-%d";
+    let config = Config::get();
+    let fmt = &config.date_fmt;
+    datetime.format(fmt).to_string()
+}
+
+pub fn datetime(datetime: &DateTime<Local>) -> String {
+    let config = Config::get();
+    let fmt = &config.datetime_fmt;
     datetime.format(fmt).to_string()
 }
 
@@ -22,10 +29,12 @@ pub fn duration(duration: &Duration) -> String {
     let minutes = duration.num_minutes() - hours * 60;
     let seconds = duration.num_seconds();
     let hours_rounded = (seconds as f64 / 3600.0).round();
-    let hours_tenths = (seconds as f64 / 360.0).round() / 10.0;
+    let hours_tenths = ((seconds as f64 / 360.0).round() * 6.0) / 60.0;
+    let hours_quarters = ((seconds as f64 / 900.0).round() * 15.0) / 60.0;
+    let hours_halves = ((seconds as f64 / 1800.0).round() * 30.0) / 60.0;
     fmt.replace("%ht", &hours_tenths.to_string())
-        // .replace("%hq", &hours_quarters.to_string())
-        // .replace("%hh", &hours_halves.to_string())
+        .replace("%hq", &hours_quarters.to_string())
+        .replace("%hh", &hours_halves.to_string())
         .replace("%HH", &hours.to_string())
         .replace("%HR", &hours_rounded.to_string())
         .replace("%MM", &minutes.to_string())
