@@ -12,7 +12,7 @@ pub use clock_in::{clock_in, InArgs};
 pub use clock_out::{clock_out, OutArgs};
 pub use clean::{clean, CleanArgs};
 pub use log::{log, LogArgs};
-pub use undo::{undo, UndoArgs};
+pub use undo::undo;
 
 
 #[derive(Subcommand)]
@@ -23,5 +23,5 @@ pub enum Commands {
     Out(OutArgs),
     Clean(CleanArgs),
     Log(LogArgs),
-    Undo(UndoArgs),
+    Undo,
 }

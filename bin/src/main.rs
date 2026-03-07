@@ -42,18 +42,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         config: app_dirs.config_dir.join("config.toml"),
         timecard: app_dirs.data_dir.join("timecard.json"),
     };
-    println!("{:?}", paths);
-
-    // TODO: Create config with default if it doesn't exist
-    // TODO: Load config and pass it into commands
 
     match &cli.command {
         Some(Commands::Status) | None => commands::status(paths),
         Some(Commands::In (args)) => commands::clock_in(args, paths),
-        Some(Commands::Out (args)) => commands::clock_out(args,paths),
+        Some(Commands::Out (args)) => commands::clock_out(args, paths),
         Some(Commands::Clean (args)) => commands::clean(args),
         Some(Commands::Log (args)) => commands::log(args),
-        Some(Commands::Undo (args)) => commands::undo(args),
+        Some(Commands::Undo) => commands::undo(paths),
     }
 
     Ok(())
