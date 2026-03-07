@@ -6,10 +6,12 @@ mod chrono_humantime;
 
 use std::{fs, path::PathBuf};
 
+use chrono::{Duration, Local};
 use clap::Parser;
 use platform_dirs::AppDirs;
+use timecard::Timecard;
 
-use crate::commands::Commands;
+use crate::{commands::Commands, config::Config, traits::{Loadable, Saveable}};
 
 
 #[derive(Parser)]
@@ -43,6 +45,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         timecard: app_dirs.data_dir.join("timecard.json"),
     };
 
+    // TODO: expect
+    let config = Config::load(&paths.config).expect("Failed to load config");
+
     match &cli.command {
         Some(Commands::Status) | None => commands::status(&paths),
         Some(Commands::In (args)) => commands::clock_in(args, &paths),
@@ -51,7 +56,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(Commands::Undo) => commands::undo(&paths),
     }
 
-    // TODO: clean
+    if let Some(entry_lifetime_days) = config.entry_lifetime_days {
+        // TODO: expect
+        let timecard = Timecard::load(&paths.timecard).expect("Failed to load Timecard");
+
+        let now = Local::now();
+        let start_datetime = now - Duration::days(entry_lifetime_days);
+        let clean_entries = timecard.filter_by_date_range(&start_datetime, &now);
+        let owned_entries = clean_entries.into_iter().cloned().collect();
+        let clean_timecard = Timecard::new(owned_entries).unwrap();
+        // TODO: expect
+        clean_timecard.save(&paths.timecard).expect("Failed to save cleaned Timecard");
+    }
 
     Ok(())
 }
