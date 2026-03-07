@@ -3,10 +3,13 @@ use std::{fmt, str::FromStr};
 use chrono::{DateTime, Datelike, Duration, Local};
 use serde::{Deserialize, Serialize};
 
+use crate::error::{ClockError, UndoError, ValidationError};
+
 #[cfg(test)]
 mod tests;
 
 
+// TODO: Make properties private and use constructor
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct TimeEntry {
     pub start: DateTime<Local>,
@@ -23,17 +26,17 @@ impl fmt::Display for TimeEntry {
 }
 
 impl FromStr for TimeEntry {
-    type Err = String;
+    type Err = chrono::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // TODO: Remove unwrap calls
         let data_split: Vec<&str> = s.split(",").collect();
 
-        let start = DateTime::parse_from_rfc3339(data_split[0]).unwrap().with_timezone(&Local);
+        let start = DateTime::parse_from_rfc3339(data_split[0])?.with_timezone(&Local);
 
         let end: Option<DateTime<Local>>;
         if data_split.len() > 1 {
-            end = Some(DateTime::parse_from_rfc3339(data_split[1]).unwrap().with_timezone(&Local));
+            end = Some(DateTime::parse_from_rfc3339(data_split[1])?.with_timezone(&Local));
         } else {
             end = None;
         }
@@ -52,31 +55,28 @@ pub struct Timecard {
 }
 
 impl Timecard {
-    pub fn new(entries: Vec<TimeEntry>) -> Result<Timecard, &'static str> {
+    pub fn new(entries: Vec<TimeEntry>) -> Result<Timecard, ValidationError> {
         let timecard = Timecard { entries, now_override: None };
         timecard.validate()?;
         Ok(timecard)
     }
 
-    pub fn validate(&self) -> Result<(), &'static str> {
+    pub fn validate(&self) -> Result<(), ValidationError> {
         let mut prev_time = DateTime::UNIX_EPOCH.with_timezone(&Local);
         let entry_count = self.entries.len();
         for (i, entry) in self.entries.iter().enumerate() {
             let is_last_entry = i == entry_count - 1;
             if entry.end.is_none() && !is_last_entry {
-                // TODO: Throw error
-                return Err("Only the last TimeEntry may have an end time of null!");
+                return Err(ValidationError::EndTimeRequired)
             }
 
             if entry.start < prev_time {
-                // TODO: Throw error
-                return Err("Timecard must be stored in chronological order!");
+                return Err(ValidationError::Chronological)
             }
 
             if let Some(entry_end) = entry.end {
                 if entry.start > entry_end {
-                    // TODO: Throw error
-                    return Err("A TimeEntry cannot have a start time that is after an end time!");
+                    return Err(ValidationError::InvertedEntry)
                 }
 
                 prev_time = entry_end;
@@ -121,21 +121,20 @@ impl Timecard {
         self.entries.clear();
     }
 
-    // TODO: Error should not be string
-    pub fn clock_in(&mut self, time: DateTime<Local>) -> Result<(), &'static str> {
+    pub fn clock_in(&mut self, time: DateTime<Local>) -> Result<(), ClockError> {
         if self.is_clocked_in() {
-            return Err("Already clocked in");
+            return Err(ClockError::AlreadyInState(crate::error::ClockState::In))
         }
 
         let now = self.now();
         if time > now {
-            return Err("Cannot clock in into the future!");
+            return Err(ClockError::TimeInFuture)
         }
 
         if let Some(last_entry) = self.entries.last() {
             // If we're clocked out, it's impossible for the last end entry to be None
             if time < last_entry.end.unwrap() {
-                return Err("Cannot clock in before last entry!");
+                return Err(ClockError::BeforeLastEntry)
             }
         }
 
@@ -148,30 +147,28 @@ impl Timecard {
         Ok(())
     }
 
-    // TODO: Error should not be string
-    pub fn clock_out(&mut self, time: DateTime<Local>) -> Result<(), &'static str> {
+    pub fn clock_out(&mut self, time: DateTime<Local>) -> Result<(), ClockError> {
         if self.is_clocked_out() {
-            return Err("Already clocked out")
+            return Err(ClockError::AlreadyInState(crate::error::ClockState::Out))
         }
 
         let now = self.now();
         if time > now {
-            return Err("Cannot clock out into the future!");
+            return Err(ClockError::TimeInFuture)
         }
 
         // We're clocked in, so there must be an entry, and the last end entry is None
         let last_entry = self.entries.last_mut().unwrap();
         if time < last_entry.start {
-            return Err("Cannot clock out before last entry!");
+            return Err(ClockError::BeforeLastEntry)
         }
         last_entry.end = Some(time);
         
         Ok(())
     }
 
-    // TODO: Error should not be string
-    pub fn undo(&mut self) -> Result<(), &'static str> {
-        let last_entry = self.entries.last_mut().ok_or("There's nothing left to undo!")?;
+    pub fn undo(&mut self) -> Result<(), UndoError> {
+        let last_entry = self.entries.last_mut().ok_or(UndoError::EmptyEntries)?;
         if last_entry.end.is_none() {
             self.entries.pop();
         } else {
@@ -246,7 +243,7 @@ impl fmt::Display for Timecard {
 }
 
 impl FromStr for Timecard {
-    type Err = String;
+    type Err = chrono::ParseError;
     
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut new_entries = vec![];

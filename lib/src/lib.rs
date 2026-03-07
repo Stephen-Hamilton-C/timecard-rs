@@ -1,4 +1,5 @@
 pub mod timecard;
+pub mod error;
 
 pub use timecard::{
     TimeEntry,
