@@ -9,20 +9,26 @@ use crate::{AppPaths, format, traits::Loadable};
 #[derive(Args, Debug)]
 pub struct LogArgs {
     #[arg(short, long, value_parser = ValueParser::new(format::date_from_input))]
-    from_date: Option<DateTime<Local>>,
+    pub from_date: Option<DateTime<Local>>,
 
     #[arg(short, long, value_parser = ValueParser::new(format::date_from_input))]
-    to_date: Option<DateTime<Local>>,
+    pub to_date: Option<DateTime<Local>>,
 
     #[arg(value_parser = ValueParser::new(format::date_from_input))]
-    day: Option<DateTime<Local>>,
+    pub day: Option<DateTime<Local>>,
 
     #[arg(short, long)]
-    all: bool,
+    pub all: bool,
 }
 
 fn get_entry_log(entry: &TimeEntry) -> String {
-    let mut log = format!("{}: {}", "IN".green(), format::time(&entry.start));
+    let today = Local::now().num_days_from_ce();
+    let start_str = if entry.start.num_days_from_ce() != today && (entry.end.is_none() || entry.end.is_some_and(|end| end.num_days_from_ce() == today)) {
+        format::datetime(&entry.start)
+    } else {
+        format::time(&entry.start)
+    };
+    let mut log = format!("{}: {}", "IN".green(), start_str);
     if let Some(end) = entry.end {
         log += &format!("\t{}: {}", "OUT".red(), format::time(&end));
     }
@@ -89,7 +95,7 @@ pub fn log(args: &LogArgs, paths: &AppPaths) {
         let entries = timecard.filter_by_day(&day);
 
         if entries.is_empty() && !show_range {
-            println!("{}", "No entries exist for the given day".yellow());
+            println!("{} {}", "No entries exist for".yellow(), format::date(&day).yellow());
         } else if !entries.is_empty() {
             if args.day.is_none() {
                 println!("Entries for {}:", "today".cyan().italic());
