@@ -2,6 +2,7 @@ use std::{fs, sync::OnceLock};
 
 use chrono::Duration;
 use serde::Deserialize;
+use serde_valid::Validate;
 
 use crate::traits::Loadable;
 
@@ -9,7 +10,7 @@ use crate::traits::Loadable;
 const DEFAULT_CONFIG: &str = include_str!("../assets/config.toml");
 static INSTANCE: OnceLock<Config> = OnceLock::new();
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct Config {
     #[serde(default = "default_time_fmt")]
     pub time_fmt: String,
@@ -27,7 +28,8 @@ pub struct Config {
     pub work_duration: Duration,
 
     #[serde(default = "default_entry_lifetime_days")]
-    pub entry_lifetime_days: usize,
+    #[validate(minimum = 1)]
+    pub entry_lifetime_days: Option<i64>,
 }
 
 impl Config {
@@ -56,8 +58,8 @@ fn default_work_duration() -> Duration {
     Duration::hours(8)
 }
 
-fn default_entry_lifetime_days() -> usize {
-    30
+fn default_entry_lifetime_days() -> Option<i64> {
+    Some(30)
 }
 
 impl Loadable<&'static Config> for Config {
