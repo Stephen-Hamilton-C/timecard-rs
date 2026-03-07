@@ -1,3 +1,5 @@
+use crate::error::ClockState;
+
 use super::*;
 
 fn get_ref_time() -> DateTime<Local> {
@@ -5,7 +7,7 @@ fn get_ref_time() -> DateTime<Local> {
 }
 
 #[test]
-fn it_rejects_bad_entry() {
+fn rejects_bad_entry() {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -21,13 +23,15 @@ fn it_rejects_bad_entry() {
             end: None,
         },
     ];
-    let result = Timecard::new(entries);
-    // TODO: Assert specific error
-    assert!(result.is_err());
+    let err = Timecard::new(entries).unwrap_err();
+    assert!(
+        matches!(err, ValidationError::InvertedEntry),
+        "Expected ValidationError::InvertedEntry, got {err:?}",
+    );
 }
 
 #[test]
-fn it_rejects_bad_order() {
+fn rejects_bad_order() {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -39,13 +43,15 @@ fn it_rejects_bad_order() {
             end: Some(time - Duration::minutes(15)),
         },
     ];
-    let result = Timecard::new(entries);
-    // TODO: Assert specific error
-    assert!(result.is_err());
+    let err = Timecard::new(entries).unwrap_err();
+    assert!(
+        matches!(err, ValidationError::Chronological),
+        "Expected ValidationError::Chronological, got {err:?}"
+    );
 }
 
 #[test]
-fn it_rejects_bad_none_end_entry_order() {
+fn rejects_bad_none_end_entry_order() {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -57,13 +63,15 @@ fn it_rejects_bad_none_end_entry_order() {
             end: None,
         },
     ];
-    let result = Timecard::new(entries);
-    // TODO: Assert specific error
-    assert!(result.is_err());
+    let err = Timecard::new(entries).unwrap_err();
+    assert!(
+        matches!(err, ValidationError::EndTimeRequired),
+        "Expected ValidationError::EndTimeRequired, got {err:?}",
+    );
 }
 
 #[test]
-fn it_rejects_overlapping_entries_out_of_order() {
+fn rejects_overlapping_entries_out_of_order() {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -75,13 +83,15 @@ fn it_rejects_overlapping_entries_out_of_order() {
             end: Some(time + Duration::minutes(12)),
         },
     ];
-    let result = Timecard::new(entries);
-    // TODO: Assert specific error
-    assert!(result.is_err());
+    let err = Timecard::new(entries).unwrap_err();
+    assert!(
+        matches!(err, ValidationError::Chronological),
+        "Expected ValidationError::Chronological, got {err:?}",
+    );
 }
 
 #[test]
-fn it_rejects_overlapping_entries_contained() {
+fn rejects_overlapping_entries_contained() {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -93,19 +103,21 @@ fn it_rejects_overlapping_entries_contained() {
             end: Some(time + Duration::minutes(10)),
         },
     ];
-    let result = Timecard::new(entries);
-    // TODO: Assert specific error
-    assert!(result.is_err());
+    let err = Timecard::new(entries).unwrap_err();
+    assert!(
+        matches!(err, ValidationError::Chronological),
+        "Expected ValidationError::Chronological, got {err:?}",
+    )
 }
 
 #[test]
-fn it_creates_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
+fn creates_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
     Timecard::new(vec![])?;
     Ok(())
 }
 
 #[test]
-fn it_creates_timecard_with_consecutive_entries() -> Result<(), Box<dyn std::error::Error>> {
+fn creates_timecard_with_consecutive_entries() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     Timecard::new(vec![
         TimeEntry {
@@ -121,7 +133,7 @@ fn it_creates_timecard_with_consecutive_entries() -> Result<(), Box<dyn std::err
 }
 
 #[test]
-fn it_creates_timecard_with_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn creates_timecard_with_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     Timecard::new(vec![
         TimeEntry {
@@ -133,7 +145,7 @@ fn it_creates_timecard_with_single_closed_entry() -> Result<(), Box<dyn std::err
 }
 
 #[test]
-fn it_creates_timecard_with_closed_and_open_entries() -> Result<(), Box<dyn std::error::Error>> {
+fn creates_timecard_with_closed_and_open_entries() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     Timecard::new(vec![
         TimeEntry {
@@ -149,7 +161,7 @@ fn it_creates_timecard_with_closed_and_open_entries() -> Result<(), Box<dyn std:
 }
 
 #[test]
-fn it_creates_timecard_with_single_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn creates_timecard_with_single_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     Timecard::new(vec![
         TimeEntry {
@@ -161,7 +173,7 @@ fn it_creates_timecard_with_single_open_entry() -> Result<(), Box<dyn std::error
 }
 
 #[test]
-fn it_creates_timecard_with_zero_duration_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn creates_timecard_with_zero_duration_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     Timecard::new(vec![
         TimeEntry {
@@ -173,7 +185,7 @@ fn it_creates_timecard_with_zero_duration_entry() -> Result<(), Box<dyn std::err
 }
 
 #[test]
-fn it_gets_entries() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_entries() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![TimeEntry {
             start: time - Duration::minutes(5),
@@ -187,7 +199,7 @@ fn it_gets_entries() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn it_reports_clocked_out_when_empty() -> Result<(), Box<dyn std::error::Error>> {
+fn reports_clocked_out_when_empty() -> Result<(), Box<dyn std::error::Error>> {
     let timecard = Timecard::new(vec![])?;
     assert!(!timecard.is_clocked_in());
     assert!(timecard.is_clocked_out());
@@ -195,7 +207,7 @@ fn it_reports_clocked_out_when_empty() -> Result<(), Box<dyn std::error::Error>>
 }
 
 #[test]
-fn it_reports_clocked_in_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn reports_clocked_in_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let timecard = Timecard::new(vec![
         TimeEntry {
@@ -209,7 +221,7 @@ fn it_reports_clocked_in_with_open_entry() -> Result<(), Box<dyn std::error::Err
 }
 
 #[test]
-fn it_reports_clocked_out_with_closed_entries() -> Result<(), Box<dyn std::error::Error>> {
+fn reports_clocked_out_with_closed_entries() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let timecard = Timecard::new(vec![
         TimeEntry {
@@ -227,7 +239,7 @@ fn it_reports_clocked_out_with_closed_entries() -> Result<(), Box<dyn std::error
 }
 
 #[test]
-fn it_reports_clocked_in_with_closed_and_open_entries() -> Result<(), Box<dyn std::error::Error>> {
+fn reports_clocked_in_with_closed_and_open_entries() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let timecard = Timecard::new(vec![
         TimeEntry {
@@ -245,7 +257,7 @@ fn it_reports_clocked_in_with_closed_and_open_entries() -> Result<(), Box<dyn st
 }
 
 #[test]
-fn it_filters_by_day_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
+fn filters_by_day_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let timecard = Timecard::new(vec![])?;
     assert!(timecard.filter_by_day(&time).is_empty());
@@ -255,7 +267,7 @@ fn it_filters_by_day_empty_timecard() -> Result<(), Box<dyn std::error::Error>> 
 }
 
 #[test]
-fn it_filters_by_day_single_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn filters_by_day_single_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -272,7 +284,7 @@ fn it_filters_by_day_single_open_entry() -> Result<(), Box<dyn std::error::Error
 }
 
 #[test]
-fn it_filters_by_day_single_closed_past_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn filters_by_day_single_closed_past_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -290,7 +302,7 @@ fn it_filters_by_day_single_closed_past_entry() -> Result<(), Box<dyn std::error
 }
 
 #[test]
-fn it_filters_by_day_multiple_entries_on_different_days() -> Result<(), Box<dyn std::error::Error>> {
+fn filters_by_day_multiple_entries_on_different_days() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -316,7 +328,7 @@ fn it_filters_by_day_multiple_entries_on_different_days() -> Result<(), Box<dyn 
 }
 
 #[test]
-fn it_filters_by_day_entry_spanning_two_days() -> Result<(), Box<dyn std::error::Error>> {
+fn filters_by_day_entry_spanning_two_days() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -338,7 +350,7 @@ fn it_filters_by_day_entry_spanning_two_days() -> Result<(), Box<dyn std::error:
 }
 
 #[test]
-fn it_filters_by_day_open_entry_spanning_multiple_days() -> Result<(), Box<dyn std::error::Error>> {
+fn filters_by_day_open_entry_spanning_multiple_days() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -359,7 +371,7 @@ fn it_filters_by_day_open_entry_spanning_multiple_days() -> Result<(), Box<dyn s
 }
 
 #[test]
-fn it_filters_by_day_multi_day_entry_with_separate_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn filters_by_day_multi_day_entry_with_separate_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -380,7 +392,7 @@ fn it_filters_by_day_multi_day_entry_with_separate_open_entry() -> Result<(), Bo
 }
 
 #[test]
-fn it_filters_by_date_range_multiple_closed_entries() -> Result<(), Box<dyn std::error::Error>> {
+fn filters_by_date_range_multiple_closed_entries() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -430,7 +442,7 @@ fn it_filters_by_date_range_multiple_closed_entries() -> Result<(), Box<dyn std:
 }
 
 #[test]
-fn it_filters_by_date_range_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn filters_by_date_range_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -446,7 +458,7 @@ fn it_filters_by_date_range_open_entry() -> Result<(), Box<dyn std::error::Error
 }
 
 #[test]
-fn it_clears_nonempty_timecard() -> Result<(), Box<dyn std::error::Error>> {
+fn clears_nonempty_timecard() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let mut timecard = Timecard::new(vec![
         TimeEntry {
@@ -462,7 +474,7 @@ fn it_clears_nonempty_timecard() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn it_clears_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
+fn clears_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
     let mut timecard = Timecard::new(vec![])?;
 
     assert!(timecard.entries.is_empty());
@@ -472,7 +484,7 @@ fn it_clears_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn it_clocks_in_when_empty() -> Result<(), Box<dyn std::error::Error>> {
+fn clocks_in_when_empty() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let mut timecard = Timecard::new(vec![])?;
     assert!(timecard.entries.is_empty());
@@ -491,7 +503,7 @@ fn it_clocks_in_when_empty() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn it_clocks_in_when_clocked_out_with_entries() -> Result<(), Box<dyn std::error::Error>> {
+fn clocks_in_when_clocked_out_with_entries() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -522,7 +534,7 @@ fn it_clocks_in_when_clocked_out_with_entries() -> Result<(), Box<dyn std::error
 }
 
 #[test]
-fn it_clock_in_errors_when_already_clocked_in() -> Result<(), Box<dyn std::error::Error>> {
+fn clock_in_errors_when_already_clocked_in() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -535,32 +547,45 @@ fn it_clock_in_errors_when_already_clocked_in() -> Result<(), Box<dyn std::error
     assert!(timecard.is_clocked_in());
     assert!(!timecard.is_clocked_out());
 
-    let result = timecard.clock_in(time.clone());
-    // TODO: Assert specific error
-    assert!(result.is_err());
+    let err = timecard.clock_in(time.clone()).unwrap_err();
+    assert!(
+        matches!(err, ClockError::AlreadyInState(ClockState::In)),
+        "Expected ClockError::AlreadyInState(ClockState::In), got {err:?}",
+    );
 
-    let result_future = timecard.clock_in(Local::now() + Duration::seconds(1));
-    // TODO: Assert specific error
-    assert!(result_future.is_err());
     Ok(())
 }
 
 #[test]
-fn it_clock_out_errors_when_not_clocked_in() -> Result<(), Box<dyn std::error::Error>> {
+fn clock_in_errors_when_time_in_future() -> Result<(), Box<dyn std::error::Error>> {
+    let mut timecard = Timecard::new(vec![])?;
+    let err = timecard.clock_in(Local::now() + Duration::seconds(1)).unwrap_err();
+    assert!(
+        matches!(err, ClockError::TimeInFuture),
+        "Expected ClockError::TimeInFuture, got {err:?}",
+    );
+
+    Ok(())
+}
+
+#[test]
+fn clock_out_errors_when_not_clocked_in() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let mut timecard = Timecard::new(vec![])?;
     assert!(timecard.entries.is_empty());
     assert!(!timecard.is_clocked_in());
     assert!(timecard.is_clocked_out());
 
-    let result = timecard.clock_out(time.clone());
-    // TODO: Assert specific error
-    assert!(result.is_err());
+    let err = timecard.clock_out(time.clone()).unwrap_err();
+    assert!(
+        matches!(err, ClockError::AlreadyInState(ClockState::Out)),
+        "Expected ClockError::AlreadyInState(ClockState::Out), got {err:?}",
+    );
     Ok(())
 }
 
 #[test]
-fn it_clocks_out_when_clocked_in() -> Result<(), Box<dyn std::error::Error>> {
+fn clocks_out_when_clocked_in() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -586,14 +611,16 @@ fn it_clocks_out_when_clocked_in() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!timecard.is_clocked_in());
     assert!(timecard.is_clocked_out());
 
-    let result = timecard.clock_out(time.clone());
-    // TODO: Assert specific error (already clocked out)
-    assert!(result.is_err());
+    let err = timecard.clock_out(time.clone()).unwrap_err();
+    assert!(
+        matches!(err, ClockError::AlreadyInState(ClockState::Out)),
+        "Expected ClockError::AlreadyInState(ClockState::Out)), got {err:?}",
+    );
     Ok(())
 }
 
 #[test]
-fn it_clocks_out_with_multiple_entries() -> Result<(), Box<dyn std::error::Error>> {
+fn clocks_out_with_multiple_entries() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -625,7 +652,7 @@ fn it_clocks_out_with_multiple_entries() -> Result<(), Box<dyn std::error::Error
 }
 
 #[test]
-fn it_clock_out_errors_with_invalid_times() -> Result<(), Box<dyn std::error::Error>> {
+fn clock_out_errors_with_invalid_times() -> Result<(), Box<dyn std::error::Error>> {
     let now = Local::now();
     let entries = vec![
         TimeEntry {
@@ -638,31 +665,37 @@ fn it_clock_out_errors_with_invalid_times() -> Result<(), Box<dyn std::error::Er
     assert!(timecard.is_clocked_in());
     assert!(!timecard.is_clocked_out());
 
-    let result_future = timecard.clock_out(now + Duration::hours(1));
-    // TODO: Assert specific error (time in future)
-    assert!(result_future.is_err());
+    let err = timecard.clock_out(now + Duration::hours(1)).unwrap_err();
+    assert!(
+        matches!(err, ClockError::TimeInFuture),
+        "Expected ClockError::TimeInFuture, got {err:?}",
+    );
 
-    let result_before_start = timecard.clock_out(now - Duration::hours(5));
-    // TODO: Assert specific error (time before start)
-    assert!(result_before_start.is_err());
+    let err = timecard.clock_out(now - Duration::hours(5)).unwrap_err();
+    assert!(
+        matches!(err, ClockError::BeforeLastEntry),
+        "Expected ClockError::BeforeLastEntry, got {err:?}",
+    );
     Ok(())
 }
 
 #[test]
-fn it_undo_errors_when_empty() -> Result<(), Box<dyn std::error::Error>> {
+fn undo_errors_when_empty() -> Result<(), Box<dyn std::error::Error>> {
     let mut timecard = Timecard::new(vec![])?;
     assert!(timecard.entries.is_empty());
     assert!(!timecard.is_clocked_in());
     assert!(timecard.is_clocked_out());
 
-    let result = timecard.undo();
-    // TODO: Assert specific error
-    assert!(result.is_err());
+    let err = timecard.undo().unwrap_err();
+    assert!(
+        matches!(err, UndoError::EmptyEntries),
+        "Expected UndoError::EmptyEntries, got {err:?}",
+    );
     Ok(())
 }
 
 #[test]
-fn it_undo_removes_single_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn undo_removes_single_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -683,7 +716,7 @@ fn it_undo_removes_single_open_entry() -> Result<(), Box<dyn std::error::Error>>
 }
 
 #[test]
-fn it_undo_reopens_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn undo_reopens_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -712,7 +745,7 @@ fn it_undo_reopens_single_closed_entry() -> Result<(), Box<dyn std::error::Error
 }
 
 #[test]
-fn it_undo_reopens_last_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn undo_reopens_last_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -746,7 +779,7 @@ fn it_undo_reopens_last_closed_entry() -> Result<(), Box<dyn std::error::Error>>
 }
 
 #[test]
-fn it_undo_removes_open_entry_with_prior_closed() -> Result<(), Box<dyn std::error::Error>> {
+fn undo_removes_open_entry_with_prior_closed() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let entries = vec![
         TimeEntry {
@@ -913,7 +946,7 @@ fn get_duration_timecards(now: DateTime<Local>) -> Result<Vec<Timecard>, Box<dyn
 }
 
 #[test]
-fn it_gets_duration_worked_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_worked_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now)?[0];
@@ -923,7 +956,7 @@ fn it_gets_duration_worked_single_closed_entry() -> Result<(), Box<dyn std::erro
 }
 
 #[test]
-fn it_gets_duration_worked_two_closed_entries_with_break() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_worked_two_closed_entries_with_break() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now)?[1];
@@ -933,7 +966,7 @@ fn it_gets_duration_worked_two_closed_entries_with_break() -> Result<(), Box<dyn
 }
 
 #[test]
-fn it_gets_duration_worked_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_worked_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[2];
     assert_eq!(Duration::hours(8) - Duration::minutes(5), timecard.get_duration_worked(&now, true));
@@ -942,7 +975,7 @@ fn it_gets_duration_worked_with_open_entry() -> Result<(), Box<dyn std::error::E
 }
 
 #[test]
-fn it_gets_duration_worked_multi_day_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_worked_multi_day_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now)?[3];
@@ -954,7 +987,7 @@ fn it_gets_duration_worked_multi_day_entry() -> Result<(), Box<dyn std::error::E
 }
 
 #[test]
-fn it_gets_duration_worked_multi_day_multi_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_worked_multi_day_multi_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now)?[4];
@@ -968,7 +1001,7 @@ fn it_gets_duration_worked_multi_day_multi_entry() -> Result<(), Box<dyn std::er
 }
 
 #[test]
-fn it_gets_duration_worked_multi_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_worked_multi_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[5];
@@ -982,7 +1015,7 @@ fn it_gets_duration_worked_multi_day_with_open_entry() -> Result<(), Box<dyn std
 }
 
 #[test]
-fn it_gets_duration_worked_current_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_worked_current_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[6];
     assert_eq!(Duration::minutes(16), timecard.get_duration_worked(&now, true));
@@ -991,7 +1024,7 @@ fn it_gets_duration_worked_current_day_with_open_entry() -> Result<(), Box<dyn s
 }
 
 #[test]
-fn it_gets_duration_worked_current_day_all_closed() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_worked_current_day_all_closed() -> Result<(), Box<dyn std::error::Error>> {
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[7];
     assert_eq!(Duration::minutes(17), timecard.get_duration_worked(&now, true));
@@ -1000,7 +1033,7 @@ fn it_gets_duration_worked_current_day_all_closed() -> Result<(), Box<dyn std::e
 }
 
 #[test]
-fn it_gets_duration_worked_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_worked_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[8];
@@ -1012,7 +1045,7 @@ fn it_gets_duration_worked_empty_timecard() -> Result<(), Box<dyn std::error::Er
 }
 
 #[test]
-fn it_gets_duration_on_break_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_on_break_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now)?[0];
@@ -1022,7 +1055,7 @@ fn it_gets_duration_on_break_single_closed_entry() -> Result<(), Box<dyn std::er
 }
 
 #[test]
-fn it_gets_duration_on_break_two_closed_entries_with_break() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_on_break_two_closed_entries_with_break() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now)?[1];
@@ -1032,7 +1065,7 @@ fn it_gets_duration_on_break_two_closed_entries_with_break() -> Result<(), Box<d
 }
 
 #[test]
-fn it_gets_duration_on_break_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_on_break_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[2];
@@ -1044,7 +1077,7 @@ fn it_gets_duration_on_break_with_open_entry() -> Result<(), Box<dyn std::error:
 }
 
 #[test]
-fn it_gets_duration_on_break_multi_day_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_on_break_multi_day_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[3];
@@ -1056,7 +1089,7 @@ fn it_gets_duration_on_break_multi_day_entry() -> Result<(), Box<dyn std::error:
 }
 
 #[test]
-fn it_gets_duration_on_break_multi_day_multi_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_on_break_multi_day_multi_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now)?[4];
@@ -1070,7 +1103,7 @@ fn it_gets_duration_on_break_multi_day_multi_entry() -> Result<(), Box<dyn std::
 }
 
 #[test]
-fn it_gets_duration_on_break_multi_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_on_break_multi_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[5];
@@ -1084,7 +1117,7 @@ fn it_gets_duration_on_break_multi_day_with_open_entry() -> Result<(), Box<dyn s
 }
 
 #[test]
-fn it_gets_duration_on_break_current_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_on_break_current_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[6];
     assert_eq!(Duration::minutes(14), timecard.get_duration_on_break(&now, true));
@@ -1093,7 +1126,7 @@ fn it_gets_duration_on_break_current_day_with_open_entry() -> Result<(), Box<dyn
 }
 
 #[test]
-fn it_gets_duration_on_break_current_day_all_closed() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_on_break_current_day_all_closed() -> Result<(), Box<dyn std::error::Error>> {
     let now = Local::now();
     println!("{}, {}", get_ref_time(), now);
     let timecard = &get_duration_timecards(now.clone())?[7];
@@ -1103,7 +1136,7 @@ fn it_gets_duration_on_break_current_day_all_closed() -> Result<(), Box<dyn std:
 }
 
 #[test]
-fn it_gets_duration_on_break_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_duration_on_break_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[8];
@@ -1116,7 +1149,7 @@ fn it_gets_duration_on_break_empty_timecard() -> Result<(), Box<dyn std::error::
 
 // TODO: Need a test for None
 #[test]
-fn it_gets_expected_end_time_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_expected_end_time_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now)?[0];
@@ -1125,7 +1158,7 @@ fn it_gets_expected_end_time_single_closed_entry() -> Result<(), Box<dyn std::er
 }
 
 #[test]
-fn it_gets_expected_end_time_two_closed_entries_with_break() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_expected_end_time_two_closed_entries_with_break() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now)?[1];
@@ -1136,7 +1169,7 @@ fn it_gets_expected_end_time_two_closed_entries_with_break() -> Result<(), Box<d
 }
 
 #[test]
-fn it_gets_expected_end_time_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_expected_end_time_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[2];
     assert_eq!(Some(now + Duration::minutes(5)), timecard.get_expected_end_time(Duration::hours(8), &now));
@@ -1145,7 +1178,7 @@ fn it_gets_expected_end_time_with_open_entry() -> Result<(), Box<dyn std::error:
 }
 
 #[test]
-fn it_gets_expected_end_time_multi_day_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_expected_end_time_multi_day_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now)?[3];
@@ -1154,7 +1187,7 @@ fn it_gets_expected_end_time_multi_day_entry() -> Result<(), Box<dyn std::error:
 }
 
 #[test]
-fn it_gets_expected_end_time_multi_day_multi_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_expected_end_time_multi_day_multi_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now)?[4];
@@ -1164,7 +1197,7 @@ fn it_gets_expected_end_time_multi_day_multi_entry() -> Result<(), Box<dyn std::
 }
 
 #[test]
-fn it_gets_expected_end_time_multi_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_expected_end_time_multi_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[5];
@@ -1175,7 +1208,7 @@ fn it_gets_expected_end_time_multi_day_with_open_entry() -> Result<(), Box<dyn s
 }
 
 #[test]
-fn it_gets_expected_end_time_current_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_expected_end_time_current_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[6];
     assert_eq!(Some(now + Duration::hours(4) - Duration::minutes(16)), timecard.get_expected_end_time(Duration::hours(4), &now));
@@ -1183,7 +1216,7 @@ fn it_gets_expected_end_time_current_day_with_open_entry() -> Result<(), Box<dyn
 }
 
 #[test]
-fn it_gets_expected_end_time_current_day_all_closed() -> Result<(), Box<dyn std::error::Error>> {
+fn gets_expected_end_time_current_day_all_closed() -> Result<(), Box<dyn std::error::Error>> {
     let now = Local::now();
     let timecard = &get_duration_timecards(now.clone())?[7];
     assert_eq!(Some(now + Duration::hours(2) - Duration::minutes(17)), timecard.get_expected_end_time(Duration::hours(2), &now));
