@@ -26,7 +26,7 @@ pub fn status(paths: &AppPaths) {
     let duration_worked = timecard.get_duration_worked(&now, true);
     let duration_on_break = timecard.get_duration_on_break(&now, true);
     let end_time = timecard.get_expected_end_time(config.work_duration, &now).unwrap();
-    println!("Worked for {}", format::duration(&duration_worked));
-    println!("On break for {}", format::duration(&duration_on_break));
-    println!("Expected end time: {}", format::time(&end_time));
+    println!("Worked for {}", format::duration(&duration_worked).green());
+    println!("On break for {}", format::duration(&duration_on_break).red());
+    println!("Expected end time: {}", format::time(&end_time).cyan());
 }
