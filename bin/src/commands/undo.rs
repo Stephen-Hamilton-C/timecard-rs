@@ -12,5 +12,6 @@ pub fn undo(paths: &AppPaths) {
     // TODO: expect
     timecard.save(&paths.timecard).expect("Failed to save Timecard");
 
+    // TODO: show status
     println!("Undid last entry");
 }
