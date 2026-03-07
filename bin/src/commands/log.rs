@@ -43,20 +43,20 @@ impl LogArgs {
 }
 
 fn get_entry_csv(entry: &TimeEntry, delimiter: &str) -> String {
-    let start = format::datetime(&entry.start);
-    let end = entry.end.map_or("".into(), |e| format::datetime(&e));
+    let start = format::datetime(&entry.start());
+    let end = entry.end().map_or("".into(), |e| format::datetime(&e));
     format!("{}{}{}", start, delimiter, end)
 }
 
 fn get_entry_log(entry: &TimeEntry) -> String {
     let today = Local::now().num_days_from_ce();
-    let start_str = if entry.start.num_days_from_ce() != today && (entry.end.is_none() || entry.end.is_some_and(|end| end.num_days_from_ce() == today)) {
-        format::datetime(&entry.start)
+    let start_str = if entry.start().num_days_from_ce() != today && (entry.end().is_none() || entry.end().is_some_and(|end| end.num_days_from_ce() == today)) {
+        format::datetime(&entry.start())
     } else {
-        format::time(&entry.start)
+        format::time(&entry.start())
     };
     let mut log = format!("{}: {}", "IN".green(), start_str);
-    if let Some(end) = entry.end {
+    if let Some(end) = entry.end() {
         log += &format!("\t{}: {}", "OUT".red(), format::time(&end));
     }
 
@@ -74,12 +74,12 @@ fn log_for_entries(entries: &[&TimeEntry], format: OutputFormat) {
         OutputFormat::PrettyByDay => {
             let mut current_day: Option<DateTime<Local>> = None;
             for entry in entries {
-                if current_day.is_none() || current_day.is_some_and(|day| day.num_days_from_ce() != entry.start.num_days_from_ce()) {
+                if current_day.is_none() || current_day.is_some_and(|day| day.num_days_from_ce() != entry.start().num_days_from_ce()) {
                     if current_day.is_some() {
                         println!();
                     }
-                    current_day = Some(entry.start.clone());
-                    println!("{}:", format::date(&entry.start).cyan())
+                    current_day = Some(entry.start().clone());
+                    println!("{}:", format::date(&entry.start()).cyan())
                 }
 
                 println!("  {}", get_entry_log(entry));

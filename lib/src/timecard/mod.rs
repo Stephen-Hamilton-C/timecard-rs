@@ -9,11 +9,38 @@ use crate::error::{ClockError, TimecardFromStrError, UndoError, ValidationError}
 mod tests;
 
 
-// TODO: Make properties private and use constructor
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct TimeEntry {
-    pub start: DateTime<Local>,
-    pub end: Option<DateTime<Local>>,
+    start: DateTime<Local>,
+    end: Option<DateTime<Local>>,
+}
+
+impl TimeEntry {
+    pub fn new(start: DateTime<Local>, end: Option<DateTime<Local>>) -> Result<TimeEntry, ValidationError> {
+        let entry = TimeEntry {
+            start, end
+        };
+
+        entry.validate().and(Ok(entry))
+    }
+
+    pub fn start(&self) -> DateTime<Local> {
+        self.start
+    }
+
+    pub fn end(&self) -> Option<DateTime<Local>> {
+        self.end
+    }
+
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        if let Some(end) = self.end {
+            if self.start > end {
+                return Err(ValidationError::InvertedEntry)
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl fmt::Display for TimeEntry {
@@ -73,11 +100,10 @@ impl Timecard {
                 return Err(ValidationError::Chronological)
             }
 
+            entry.validate()?;
             if let Some(entry_end) = entry.end {
-                if entry.start > entry_end {
-                    return Err(ValidationError::InvertedEntry)
-                }
-
+                // If there's no end time, there won't be any more entries,
+                // so we don't need to worry about updating prev_time
                 prev_time = entry_end;
             }
         }
