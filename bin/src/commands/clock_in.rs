@@ -10,6 +10,7 @@ use crate::{format, traits::Saveable};
 
 #[derive(Args, Debug)]
 pub struct InArgs {
+    /// A time in the past at which the entry begins. Defaults to the current time if omitted.
     #[arg(value_parser = ValueParser::new(format::time_from_input))]
     time: Option<DateTime<Local>>
 }

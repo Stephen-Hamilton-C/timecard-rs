@@ -8,18 +8,23 @@ use crate::format;
 
 #[derive(Args, Debug)]
 pub struct LogArgs {
+    /// Show entries on or after this date. If an end date is set but this is omitted, defaults to UNIX epoch (January 1, 1970).
     #[arg(short, long, value_parser = ValueParser::new(format::date_from_input))]
     from_date: Option<DateTime<Local>>,
 
+    /// Show entries on or before this date. If a start date is set but this is omitted, defaults to today.
     #[arg(short, long, value_parser = ValueParser::new(format::date_from_input))]
     to_date: Option<DateTime<Local>>,
 
+    /// Show entries from this specific date. If a date range is also provided, range entries are shown first, followed by entries from this date.
     #[arg(value_parser = ValueParser::new(format::date_from_input))]
-    day: Option<DateTime<Local>>,
+    date: Option<DateTime<Local>>,
 
+    /// Show every stored entry, ignoring any date range or specific day filters.
     #[arg(short, long)]
     all: bool,
 
+    /// Prints entries in CSV format, using `,` as a separator. A custom separator can be provided to override the default.
     #[arg(long, num_args = 0..=1, default_missing_value = ",")]
     csv: Option<String>,
 }
@@ -35,7 +40,7 @@ impl LogArgs {
         LogArgs {
             from_date: None,
             to_date: None,
-            day,
+            date: day,
             all,
             csv: None,
         }
@@ -96,7 +101,7 @@ fn log_for_entries(entries: &[&TimeEntry], format: OutputFormat) {
 
 pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
     let show_range = args.from_date.is_some() || args.to_date.is_some();
-    let show_day = (args.from_date.is_none() && args.to_date.is_none()) || args.day.is_some();
+    let show_day = (args.from_date.is_none() && args.to_date.is_none()) || args.date.is_some();
 
     if args.all {
         if timecard.entries().is_empty() {
@@ -138,7 +143,7 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
     }
 
     if show_day {
-        let day = args.day.unwrap_or(Local::now());
+        let day = args.date.unwrap_or(Local::now());
         let entries = timecard.filter_by_day(&day);
 
         if entries.is_empty() && !show_range {
@@ -147,7 +152,7 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
             if let Some(csv_sep) = &args.csv {
                 log_for_entries(&entries, OutputFormat::Csv(csv_sep.into()));
             } else {
-                if args.day.is_none() {
+                if args.date.is_none() {
                     println!("Entries for {}:", "today".cyan().italic());
                 } else {
                     println!("Entries for {}:", format::date(&day).cyan());

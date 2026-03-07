@@ -1,8 +1,6 @@
 [workspace]
 members = ["lib", "bin"]
 resolver = "3"
-readme = "README.md"
-description = "times your card"
 
 [workspace.dependencies]
 chrono = { version = "0.4.44", features = ["serde"] }

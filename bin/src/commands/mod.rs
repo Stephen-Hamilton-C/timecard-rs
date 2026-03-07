@@ -15,10 +15,14 @@ pub use undo::undo;
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Shows current clocked status
+    /// Show whether you are currently clocked in or out.
     Status,
+    /// Clock in and start a new time entry.
     In(InArgs),
+    /// Clock out and end the current time entry.
     Out(OutArgs),
+    /// View time entries for a specific day or date range.
     Log(LogArgs),
+    /// Revert the most recent clock in or clock out action.
     Undo,
 }

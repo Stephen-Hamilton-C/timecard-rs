@@ -16,12 +16,11 @@ use crate::{commands::Commands, config::Config, traits::{Loadable, Saveable}};
 
 
 #[derive(Parser)]
-#[command(name = "timecard")]
 #[command(
+    name = "timecard",
     version,
     propagate_version = true,
     about,
-    long_about = None,
 )]
 struct Cli {
     #[command(subcommand)]

@@ -2,6 +2,8 @@
 name = "timecard-cli"
 version = "0.1.0"
 edition = "2024"
+description = "Helps you keep track of how long you've worked each day"
+readme = "../README.md"
 
 [[bin]]
 name = "timecard"

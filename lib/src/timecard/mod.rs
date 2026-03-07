@@ -18,7 +18,7 @@ pub struct TimeEntry {
 impl TimeEntry {
     pub fn new(start: DateTime<Local>, end: Option<DateTime<Local>>) -> Result<TimeEntry, ValidationError> {
         let entry = TimeEntry {
-            start, end
+            start, end,
         };
 
         entry.validate().and(Ok(entry))
