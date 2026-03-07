@@ -23,7 +23,7 @@ pub fn datetime(datetime: &DateTime<Local>) -> String {
 
 pub fn duration(duration: &Duration) -> String {
     let config = Config::get();
-    let fmt = &config.duration_format;
+    let fmt = &config.duration_fmt;
 
     let hours = duration.num_hours();
     let minutes = duration.num_minutes() - hours * 60;

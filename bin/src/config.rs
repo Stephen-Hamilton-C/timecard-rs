@@ -22,8 +22,8 @@ pub struct Config {
     #[serde(default = "default_datetime_fmt")]
     pub datetime_fmt: String,
 
-    #[serde(default = "default_duration_format")]
-    pub duration_format: String,
+    #[serde(default = "default_duration_fmt")]
+    pub duration_fmt: String,
 
     #[serde(default = "default_work_duration", with = "crate::chrono_humantime")]
     pub work_duration: Duration,
@@ -51,7 +51,7 @@ fn default_datetime_fmt() -> String {
     String::from("%Y-%m-%d %I:%M %p")
 }
 
-fn default_duration_format() -> String {
+fn default_duration_fmt() -> String {
     String::from("%HH hours, %MM minutes")
 }
 
