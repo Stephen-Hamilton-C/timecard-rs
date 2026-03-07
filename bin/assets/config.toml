@@ -1,5 +1,8 @@
 # Determines how much time is considered a full day of work.
 # This directly influences the "expected end time" calculation.
+# The format is fairly intuitive, but if you need specifics,
+# it uses the `humantime` duration syntax, which can be found here:
+# https://docs.rs/humantime/latest/humantime/fn.parse_duration.html
 # default "8 hours"
 work_duration = "8 hours"
 
