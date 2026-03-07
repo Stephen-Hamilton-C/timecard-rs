@@ -3,7 +3,7 @@ use timecard::Timecard;
 use crate::{AppPaths, traits::{Loadable, Saveable}};
 
 
-pub fn undo(paths: AppPaths) {
+pub fn undo(paths: &AppPaths) {
     // TODO: expect
     let mut timecard = Timecard::load(&paths.timecard).expect("Failed to load timecard");
 

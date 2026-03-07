@@ -11,7 +11,7 @@ pub struct InArgs {
     time: Option<DateTime<Local>>
 }
 
-pub fn clock_in(args: &InArgs, paths: AppPaths) {
+pub fn clock_in(args: &InArgs, paths: &AppPaths) {
     // TODO: expect
     let mut timecard = Timecard::load(&paths.timecard).expect("Failed to load Timecard");
 

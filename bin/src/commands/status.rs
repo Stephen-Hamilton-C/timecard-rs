@@ -4,7 +4,7 @@ use timecard::Timecard;
 
 use crate::{AppPaths, format, traits::Loadable, config::Config};
 
-pub fn status(paths: AppPaths) {
+pub fn status(paths: &AppPaths) {
     // TODO: expect
     let timecard = Timecard::load(&paths.timecard).expect("Failed to load Timecard");
     // TODO: expect
