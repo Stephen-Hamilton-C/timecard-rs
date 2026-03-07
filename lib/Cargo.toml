@@ -3,6 +3,13 @@ name = "timecard"
 version = "0.1.0"
 edition = "2024"
 readme = "../README.md"
+description = "Simple library that makes time tracking easier"
+license = "MIT"
+repository = "https://https://github.com/Stephen-Hamilton-C/timecard"
+
+[lib]
+name = "timecard"
+path = "src/lib.rs"
 
 [dependencies]
 chrono = { workspace = true }

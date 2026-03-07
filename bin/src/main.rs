@@ -18,9 +18,9 @@ use crate::{commands::Commands, config::Config, traits::{Loadable, Saveable}};
 #[derive(Parser)]
 #[command(
     name = "timecard",
+    about = "Helps you keep track of how long you've worked each day",
     version,
     propagate_version = true,
-    about,
 )]
 struct Cli {
     #[command(subcommand)]
