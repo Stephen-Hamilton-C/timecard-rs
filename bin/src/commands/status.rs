@@ -7,8 +7,7 @@ use crate::{AppPaths, format, traits::Loadable, config::Config};
 pub fn status(paths: &AppPaths) {
     // TODO: expect
     let timecard = Timecard::load(&paths.timecard).expect("Failed to load Timecard");
-    // TODO: expect
-    let config = Config::load(&paths.config).expect("Failed to load config");
+    let config = Config::get();
     let now = Local::now();
     let entries = timecard.filter_by_day(&now);
 
