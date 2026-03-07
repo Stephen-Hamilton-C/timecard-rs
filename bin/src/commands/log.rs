@@ -3,7 +3,7 @@ use clap::{Args, builder::ValueParser};
 use colored::Colorize;
 use timecard::{TimeEntry, Timecard};
 
-use crate::{AppPaths, format, traits::Loadable};
+use crate::format;
 
 
 #[derive(Args, Debug)]
@@ -43,9 +43,7 @@ fn log_for_entries(entries: &[&TimeEntry]) {
     }
 }
 
-pub fn log(args: &LogArgs, paths: &AppPaths) {
-    // TODO: expect
-    let timecard = Timecard::load(&paths.timecard).expect("Failed to load Timecard");
+pub fn log(args: &LogArgs, timecard: &Timecard) {
     let show_range = args.from_date.is_some() || args.to_date.is_some();
     let show_day = (args.from_date.is_none() && args.to_date.is_none()) || args.day.is_some();
 

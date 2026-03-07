@@ -1,9 +1,11 @@
+use std::path::PathBuf;
+
 use chrono::{DateTime, Local};
 use clap::{Args, builder::ValueParser};
 use colored::Colorize;
 use timecard::Timecard;
 
-use crate::{AppPaths, format, traits::{Loadable, Saveable}};
+use crate::{format, traits::Saveable};
 
 
 #[derive(Args, Debug)]
@@ -12,15 +14,12 @@ pub struct InArgs {
     time: Option<DateTime<Local>>
 }
 
-pub fn clock_in(args: &InArgs, paths: &AppPaths) {
-    // TODO: expect
-    let mut timecard = Timecard::load(&paths.timecard).expect("Failed to load Timecard");
-
+pub fn clock_in(args: &InArgs, timecard: &mut Timecard, timecard_path: &PathBuf) {
     let time = args.time.unwrap_or(Local::now());
     // TODO: expect
     timecard.clock_in(time).expect("Failed to clock in");
     // TODO: expect
-    timecard.save(&paths.timecard).expect("Failed to save Timecard");
+    timecard.save(timecard_path).expect("Failed to save Timecard");
 
     println!("Clocked {} at {}", "in".green(), format::time(&time).green());
 }

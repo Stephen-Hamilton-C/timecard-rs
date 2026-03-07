@@ -2,11 +2,9 @@ use chrono::Local;
 use colored::Colorize;
 use timecard::Timecard;
 
-use crate::{AppPaths, format, traits::Loadable, config::Config};
+use crate::{format, config::Config};
 
-pub fn status(paths: &AppPaths) {
-    // TODO: expect
-    let timecard = Timecard::load(&paths.timecard).expect("Failed to load Timecard");
+pub fn status(timecard: &Timecard) {
     let config = Config::get();
     let now = Local::now();
     let entries = timecard.filter_by_day(&now);
