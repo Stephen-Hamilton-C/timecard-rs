@@ -1,6 +1,46 @@
-time_fmt = "%I:%M %p"
-date_fmt = "%Y-%m-%d"
-datetime_fmt = "%Y-%m-%d %I:%M %p"
-duration_format = "%HH hours, %MM minutes"
+# Determines how much time is considered a full day of work.
+# This directly influences the "expected end time" calculation.
+# default "8 hours"
 work_duration = "8 hours"
+
+# Determines how long to keep entries for.
+# All entries older than the number of days provided are removed
+# after timecard is run again.
+# default 30
 entry_lifetime_days = 30
+
+
+# Formats
+# These formats use strftime/strptime datetime formatting syntax
+# A complete table of the syntax can be found here:
+# https://docs.rs/chrono/latest/chrono/format/strftime/index.html
+
+# The format to use when showing just a time
+# default "%I:%M %p"
+time_fmt = "%I:%M %p"
+
+# The format to use when showing just a date
+# default "%Y-%m-%d"
+date_fmt = "%Y-%m-%d"
+
+# The format to use when showing a date and a time
+# default "%Y-%m-%d %I:%M %p"
+datetime_fmt = "%Y-%m-%d %I:%M %p"
+
+# The format to use when showing a time period.
+# This uses a different syntax than the one shown above.
+# A complete, up-to-date table of the syntax can be found here:
+# https://github.com/Stephen-Hamilton-C/timecard-rs#duration-format
+# Here is a copy of that table, in case the internet has been obliterated:
+# | Specifier | Example | Description |
+# | --------- | ------- | ----------- |
+# | `%ht`     | `2.8`   | Hours, rounded to the nearest tenth |
+# | `%hq`     | `2.75`  | Hours, rounded to the nearest quarter |
+# | `%hh`     | `2.5`   | Hours, rounded to the nearest half |
+# | `%HR`     | `2`     | Hours, rounded to the nearest whole hour |
+# | `%HH`     | `2`     | Whole hours |
+# | `%MM`     | `30`    | Whole minutes |
+# | `>>H`     | `02`    | Whole hours, padded with zeros |
+# | `>>M`     | `09`    | Whole minutes, padded with zeros |
+# default "%HH hours, %MM minutes"
+duration_fmt = "%HH hours, %MM minutes"
