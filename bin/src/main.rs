@@ -36,7 +36,7 @@ fn main() -> Result<()> {
         .context(format!("Failed to create config directory: {}", &app_dirs.config_dir.to_string_lossy()))?;
     fs::create_dir_all(&app_dirs.data_dir)
         .context(format!("Failed to create data directory: {}", &app_dirs.data_dir.to_string_lossy()))?;
-    let config_path = app_dirs.config_dir.join("config.toml");
+    let config_path = app_dirs.config_dir.join("timecard-cli.toml");
     let timecard_path = app_dirs.data_dir.join("timecard.json");
 
     let config = Config::load(&config_path)?;
