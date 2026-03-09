@@ -69,15 +69,18 @@ pub fn time_from_input(input: &str) -> Result<DateTime<Local>, String> {
         return Ok(dt)
     }
 
-    const TIME_FORMATS: &[&str] = &["%H:%M", "%H:%M:%S", "%I:%M %p", "%I:%M:%S %p", "%I %p"];
+    const TIME_FORMATS: &[&str] = &["%H:%M", "%H:%M:%S", "%I:%M%p", "%I:%M %p", "%I:%M:%S%p", "%I:%M:%S %p", "%I%p", "%I %p", "%I%M%p", "%I%M%S%p"];
     let time = TIME_FORMATS.iter().find_map(|fmt| NaiveTime::parse_from_str(input, fmt).ok());
     if let Some(specific_time) = time {
         let naive_dt = Local::now().date_naive().and_time(specific_time);
         return naive_dt.and_local_timezone(Local).single().ok_or("Failed to parse NaiveTime".into())
     }
 
-    const DATETIME_FORMATS: &[&str] = &["%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"];
-    let datetime = DATETIME_FORMATS.iter().find_map(|fmt| NaiveDateTime::parse_from_str(input, fmt).ok());
+    const DATE_PREFIXES: &[&str] = &["%Y-%m-%dT", "%Y-%m-%d ", "%Y%m%d_", "%Y%m%dT"];
+    let datetime_formats: Vec<String> = DATE_PREFIXES.iter()
+        .flat_map(|date| TIME_FORMATS.iter().map(move |time| format!("{}{}", date, time)))
+        .collect();
+    let datetime = datetime_formats.iter().find_map(|fmt| NaiveDateTime::parse_from_str(input, fmt).ok());
     if let Some(specific_datetime) = datetime {
         return specific_datetime.and_local_timezone(Local).single().ok_or("Failed to parse NaiveDateTime".into())
     }
@@ -98,7 +101,7 @@ pub fn date_from_input(input: &str) -> Result<DateTime<Local>, String> {
         return Ok(dt)
     }
 
-    const DATE_FORMATS: &[&str] = &["%Y-%m-%d"];
+    const DATE_FORMATS: &[&str] = &["%Y-%m-%d", "%m/%d/%Y"];
     let date = DATE_FORMATS.iter().find_map(|fmt| NaiveDate::parse_from_str(input, fmt).ok());
     if let Some(specific_date) = date {
         let naive_dt = specific_date.and_time(NaiveTime::parse_from_str("12:00", "%H:%M").unwrap());
