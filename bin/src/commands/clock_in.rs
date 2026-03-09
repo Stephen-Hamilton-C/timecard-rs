@@ -16,11 +16,12 @@ pub struct InArgs {
 }
 
 pub fn clock_in(args: &InArgs, timecard: &mut Timecard, timecard_path: &PathBuf) -> anyhow::Result<()> {
-    let time = args.time.unwrap_or(Local::now());
+    let now = Local::now();
+    let time = args.time.unwrap_or(now);
     timecard.clock_in(time)?;
     timecard.save(timecard_path)?;
 
-    println!("Clocked {} at {}", "in".green(), format::time(&time).green());
+    println!("Clocked {} at {}", "in".green(), format::time_or_datetime(&time, &now).green());
 
     Ok(())
 }

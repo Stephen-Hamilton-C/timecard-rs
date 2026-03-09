@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
+use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
 use crate::config::Config;
 
@@ -19,6 +19,14 @@ pub fn datetime(datetime: &DateTime<Local>) -> String {
     let config = Config::get();
     let fmt = &config.datetime_fmt;
     datetime.format(fmt).to_string()
+}
+
+pub fn time_or_datetime(date_time: &DateTime<Local>, now: &DateTime<Local>) -> String {
+    if date_time.num_days_from_ce() == now.num_days_from_ce() {
+        time(&date_time)
+    } else {
+        datetime(&date_time)
+    }
 }
 
 pub fn duration(duration: &Duration) -> String {

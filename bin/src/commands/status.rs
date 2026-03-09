@@ -14,11 +14,13 @@ pub fn status(timecard: &Timecard) -> anyhow::Result<()> {
         return Ok(())
     } else if timecard.is_clocked_in() {
         let last_entry = entries.last().unwrap();
-        println!("Clocked {} since {}", "IN".green(), format::time(&last_entry.start()).green());
+        let fmt_time = format::time_or_datetime(&last_entry.start(), &now);
+        println!("Clocked {} since {}", "IN".green(), fmt_time.green());
     } else {
         let last_entry = entries.last().unwrap();
         // We're clocked out, so there must be an end entry
-        println!("Clocked {} since {}", "OUT".red(), format::time(&last_entry.end().unwrap()).red());
+        let fmt_time = format::time_or_datetime(&last_entry.end().unwrap(), &now);
+        println!("Clocked {} since {}", "OUT".red(), fmt_time.red());
     }
 
     let duration_worked = timecard.get_duration_worked(&now, true);

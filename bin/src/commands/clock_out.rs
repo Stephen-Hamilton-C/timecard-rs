@@ -16,11 +16,12 @@ pub struct OutArgs {
 }
 
 pub fn clock_out(args: &OutArgs, timecard: &mut Timecard, timecard_path: &PathBuf) -> anyhow::Result<()> {
-    let time = args.time.unwrap_or(Local::now());
+    let now = Local::now();
+    let time = args.time.unwrap_or(now);
     timecard.clock_out(time)?;
     timecard.save(timecard_path)?;
 
-    println!("Clocked {} at {}", "out".red(), format::time(&time).red());
+    println!("Clocked {} at {}", "out".red(), format::time_or_datetime(&time, &now).red());
 
     Ok(())
 }
