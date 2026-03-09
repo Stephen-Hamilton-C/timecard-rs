@@ -21,6 +21,7 @@ entry_lifetime_days = 30
 # The format to use when showing just a time
 # default "%I:%M %p"
 time_fmt = "%I:%M %p"
+# time_fmt = "%H:%M"  # uncomment for 24-hour time
 
 # The format to use when showing just a date
 # default "%Y-%m-%d"
@@ -29,6 +30,7 @@ date_fmt = "%Y-%m-%d"
 # The format to use when showing a date and a time
 # default "%Y-%m-%d %I:%M %p"
 datetime_fmt = "%Y-%m-%d %I:%M %p"
+# datetime_fmt = "%Y-%m-%d %H:%M"  # uncomment for 24-hour time
 
 # The format to use when showing a time period.
 # This uses a different syntax than the one shown above.
