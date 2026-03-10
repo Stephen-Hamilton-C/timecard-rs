@@ -5,7 +5,7 @@ edition = "2024"
 readme = "../README.md"
 description = "CLI frontend for timecard"
 license = "GPL-3.0-only"
-repository = "https://https://github.com/Stephen-Hamilton-C/timecard"
+repository = "https://github.com/Stephen-Hamilton-C/timecard"
 
 [[bin]]
 name = "timecard"
