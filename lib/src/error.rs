@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use thiserror::Error;
 
+/// A catch-all for any error that could be thrown by `timecard`
 #[derive(Debug, Error)]
 pub enum TimecardError {
     #[error("Timecard validation error: {0}")]
@@ -14,6 +15,7 @@ pub enum TimecardError {
     TimecardUndoError(#[from] UndoError),
 }
 
+/// Errors that can be thrown by `Timecard::from_str`
 #[derive(Debug, Error)]
 pub enum TimecardFromStrError {
     #[error("Timecard validation error: {0}")]
@@ -23,6 +25,13 @@ pub enum TimecardFromStrError {
     ChronoParseError(#[from] chrono::ParseError),
 }
 
+/// An error that happened while a Timecard or TimeEntry was being constructed
+/// 
+/// # Variants
+/// 
+/// - `EndTimeRequired` - Thrown if an end entry is not the last entry
+/// - `Chronological` - Thrown if entries are not in chronological order
+/// - `InvertedEntry` - Thrown if an entry has an end time that comes before its start time
 #[derive(Debug, Error)]
 pub enum ValidationError {
     #[error("End entry required if this is not the last entry")]
@@ -35,6 +44,13 @@ pub enum ValidationError {
     InvertedEntry,
 }
 
+/// An error that happened while trying to clock a Timecard in or out.
+/// 
+/// # Variants
+/// 
+/// - `AlreadyInState(ClockState)` - Thrown when trying to clock into a state that the Timecard was already in
+/// - `TimeInFuture` - Thrown when trying to clock in or out into the future
+/// - `BeforeLastEntry` - Thrown when trying to clock in or out before the last recorded time
 #[derive(Debug, Error)]
 pub enum ClockError {
     #[error("Already clocked {0}")]
@@ -62,6 +78,11 @@ impl Display for ClockState {
     }
 }
 
+/// An error that happened while trying to undo the last time record in a Timecard
+/// 
+/// # Variants
+/// 
+/// - `EmptyEntries` - Thrown when trying to undo on a Timecard with no entries
 #[derive(Debug, Error)]
 pub enum UndoError {
     #[error("No more entries to undo")]
