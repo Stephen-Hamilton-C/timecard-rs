@@ -1,6 +1,6 @@
 [package]
 name = "timecard-cli"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 readme = "../README.md"
 description = "CLI frontend for timecard"
@@ -23,3 +23,4 @@ platform-dirs = "0.3.0"
 humantime = "2.3.0"
 serde_valid = "2.0.1"
 anyhow = "1.0.102"
+notify-rust = "4.12.0"
