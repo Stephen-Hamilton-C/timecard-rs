@@ -48,6 +48,7 @@ fn main() -> Result<()> {
         Some(Commands::Out (args)) => commands::clock_out(args, &mut timecard, &timecard_path)?,
         Some(Commands::Log (args)) => commands::log(args, &timecard)?,
         Some(Commands::Undo) => commands::undo(&mut timecard, &timecard_path)?,
+        Some(Commands::Notify(args)) => commands::notify(args, &timecard, &app_dirs.data_dir)?,
     }
 
     if let Some(entry_lifetime_days) = config.entry_lifetime_days {

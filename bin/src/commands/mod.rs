@@ -3,6 +3,7 @@ mod clock_in;
 mod clock_out;
 mod log;
 mod undo;
+mod notify;
 
 use clap::Subcommand;
 
@@ -11,6 +12,7 @@ pub use clock_in::{clock_in, InArgs};
 pub use clock_out::{clock_out, OutArgs};
 pub use log::{log, LogArgs};
 pub use undo::undo;
+pub use notify::{notify, NotifyArgs};
 
 
 #[derive(Subcommand)]
@@ -25,4 +27,6 @@ pub enum Commands {
     Log(LogArgs),
     /// Revert the most recent clock in or clock out action.
     Undo,
+    /// Send notification if expected end time is hit.
+    Notify(NotifyArgs),
 }
