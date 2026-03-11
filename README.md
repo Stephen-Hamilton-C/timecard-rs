@@ -15,6 +15,7 @@ The `timecard` library documentation can be found [here][timecard-docs]
     - [Clocking In \& Out](#clocking-in--out)
     - [Undo](#undo)
     - [Log](#log)
+    - [Notifications](#notifications)
   - [Configuration](#configuration)
     - [Duration Format](#duration-format)
 
@@ -137,6 +138,17 @@ Start;End
 ```
 
 
+### Notifications
+
+You can get a desktop notification when you reach your expected end time
+by running `timecard notify`.
+This command is intended to be periodically run by a service.
+If you're on Linux, you can run `timecard notify --install` to setup a systemd
+service + timer unit, which will run that command approximately every minute.
+This command only sends a notification once per day,
+and only sends it if the current time meets or exceeds the expected end time.
+
+
 ## Configuration
 
 The config file location depends on what OS you're on:
@@ -170,3 +182,4 @@ The `duration_fmt` config field uses a custom format defined below:
 <!-- links -->
 [rfc-3339]: https://www.rfc-editor.org/rfc/rfc3339
 [humantime-duration]: https://docs.rs/humantime/latest/humantime/fn.parse_duration.html
+[timecard-docs]: https://docs.rs/timecard/latest/timecard/
