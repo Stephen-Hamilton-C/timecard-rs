@@ -7,6 +7,8 @@ However, it is also meant to be useful to myself, so maybe you can find some use
 `timecard` is a library that makes it easy to build applications that keep track of time,
 such as `timecard-cli`.
 
+The `timecard` library documentation can be found [here][timecard-docs]
+
 - [timecard-rs](#timecard-rs)
   - [Install](#install)
   - [Usage](#usage)
