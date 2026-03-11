@@ -1,0 +1,10 @@
+[Unit]
+Description=Timecard Notification Timer
+
+[Timer]
+Unit=%i.service
+OnCalendar=*-*-* *:*:00
+Persistent=false
+
+[Install]
+WantedBy=default.target

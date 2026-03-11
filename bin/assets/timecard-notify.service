@@ -1,0 +1,7 @@
+[Unit]
+Description=Timecard Notification Service
+Wants=default.target
+After=default.target
+
+[Service]
+ExecStart=$TIMECARD_PATH notify
