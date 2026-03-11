@@ -1,6 +1,6 @@
 [package]
 name = "timecard-cli"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 readme = "../README.md"
 description = "CLI frontend for timecard"
@@ -12,7 +12,7 @@ name = "timecard"
 path = "src/main.rs"
 
 [dependencies]
-timecard = { version = "0.1.0", path = "../lib" }
+timecard = { version = "0.2.0", path = "../lib" }
 chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = "1.0.149"
