@@ -33,9 +33,9 @@ fn main() -> Result<()> {
     let app_dirs = AppDirs::new(Some("timecard"), false)
         .context("Failed to determine data paths")?;
     fs::create_dir_all(&app_dirs.config_dir)
-        .context(format!("Failed to create config directory: {}", &app_dirs.config_dir.to_string_lossy()))?;
+        .context(format!("Failed to create config directory: {}", &app_dirs.config_dir.display()))?;
     fs::create_dir_all(&app_dirs.data_dir)
-        .context(format!("Failed to create data directory: {}", &app_dirs.data_dir.to_string_lossy()))?;
+        .context(format!("Failed to create data directory: {}", &app_dirs.data_dir.display()))?;
     let config_path = app_dirs.config_dir.join("timecard-cli.toml");
     let timecard_path = app_dirs.data_dir.join("timecard.json");
 
