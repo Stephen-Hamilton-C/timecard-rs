@@ -1,27 +1,27 @@
-use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
+use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 
 use crate::config::Config;
 
 
-pub fn time(datetime: &DateTime<Local>) -> String {
+pub fn time(datetime: &DateTime<Utc>) -> String {
     let config = Config::get();
     let fmt = &config.time_fmt;
-    datetime.format(fmt).to_string()
+    datetime.with_timezone(&Local).format(fmt).to_string()
 }
 
-pub fn date(datetime: &DateTime<Local>) -> String {
+pub fn date(datetime: &DateTime<Utc>) -> String {
     let config = Config::get();
     let fmt = &config.date_fmt;
-    datetime.format(fmt).to_string()
+    datetime.with_timezone(&Local).format(fmt).to_string()
 }
 
-pub fn datetime(datetime: &DateTime<Local>) -> String {
+pub fn datetime(datetime: &DateTime<Utc>) -> String {
     let config = Config::get();
     let fmt = &config.datetime_fmt;
-    datetime.format(fmt).to_string()
+    datetime.with_timezone(&Local).format(fmt).to_string()
 }
 
-pub fn time_or_datetime(date_time: &DateTime<Local>, now: &DateTime<Local>) -> String {
+pub fn time_or_datetime(date_time: &DateTime<Utc>, now: &DateTime<Utc>) -> String {
     if date_time.num_days_from_ce() == now.num_days_from_ce() {
         time(&date_time)
     } else {
@@ -50,10 +50,10 @@ pub fn duration(duration: &Duration) -> String {
         .replace(">>M", &format!("{:02}", minutes))
 }
 
-fn from_input(input: &str) -> Option<DateTime<Local>> {
+fn from_input(input: &str) -> Option<DateTime<Utc>> {
     if let Ok(std_dur) = humantime::parse_duration(input) {
         if let Ok(td) = Duration::from_std(std_dur) {
-            return Some(Local::now() - td)
+            return Some(Utc::now() - td)
         }
     }
 
@@ -64,7 +64,7 @@ fn from_input(input: &str) -> Option<DateTime<Local>> {
     None
 }
 
-pub fn time_from_input(input: &str) -> Result<DateTime<Local>, String> {
+pub fn time_from_input(input: &str) -> Result<DateTime<Utc>, String> {
     if let Some(dt) = from_input(input) {
         return Ok(dt)
     }
@@ -72,8 +72,8 @@ pub fn time_from_input(input: &str) -> Result<DateTime<Local>, String> {
     const TIME_FORMATS: &[&str] = &["%H:%M", "%H:%M:%S", "%I:%M%p", "%I:%M %p", "%I:%M:%S%p", "%I:%M:%S %p", "%I%p", "%I %p", "%I%M%p", "%I%M%S%p"];
     let time = TIME_FORMATS.iter().find_map(|fmt| NaiveTime::parse_from_str(input, fmt).ok());
     if let Some(specific_time) = time {
-        let naive_dt = Local::now().date_naive().and_time(specific_time);
-        return naive_dt.and_local_timezone(Local).single().ok_or("Failed to parse NaiveTime".into())
+        let naive_dt = Utc::now().date_naive().and_time(specific_time);
+        return naive_dt.and_local_timezone(Utc).single().ok_or("Failed to parse NaiveTime".into())
     }
 
     const DATE_PREFIXES: &[&str] = &["%Y-%m-%dT", "%Y-%m-%d ", "%Y%m%d_", "%Y%m%dT"];
@@ -82,21 +82,21 @@ pub fn time_from_input(input: &str) -> Result<DateTime<Local>, String> {
         .collect();
     let datetime = datetime_formats.iter().find_map(|fmt| NaiveDateTime::parse_from_str(input, fmt).ok());
     if let Some(specific_datetime) = datetime {
-        return specific_datetime.and_local_timezone(Local).single().ok_or("Failed to parse NaiveDateTime".into())
+        return specific_datetime.and_local_timezone(Utc).single().ok_or("Failed to parse NaiveDateTime".into())
     }
 
     if let Ok(minutes) = input.parse::<i64>() {
-        return Ok(Local::now() - Duration::minutes(minutes))
+        return Ok(Utc::now() - Duration::minutes(minutes))
     }
 
     if input.to_lowercase() == "now" {
-        return Ok(Local::now())
+        return Ok(Utc::now())
     }
 
     Err("Invalid datetime format".into())
 }
 
-pub fn date_from_input(input: &str) -> Result<DateTime<Local>, String> {
+pub fn date_from_input(input: &str) -> Result<DateTime<Utc>, String> {
     if let Some(dt) = from_input(input) {
         return Ok(dt)
     }
@@ -105,15 +105,15 @@ pub fn date_from_input(input: &str) -> Result<DateTime<Local>, String> {
     let date = DATE_FORMATS.iter().find_map(|fmt| NaiveDate::parse_from_str(input, fmt).ok());
     if let Some(specific_date) = date {
         let naive_dt = specific_date.and_time(NaiveTime::parse_from_str("12:00", "%H:%M").unwrap());
-        return Local.from_local_datetime(&naive_dt).single().ok_or("Failed to parse NaiveDate".into())
+        return Utc.from_local_datetime(&naive_dt).single().ok_or("Failed to parse NaiveDate".into())
     }
 
     if let Ok(days) = input.parse::<i64>() {
-        return Ok(Local::now() - Duration::days(days))
+        return Ok(Utc::now() - Duration::days(days))
     }
 
     if input.to_lowercase() == "today" {
-        return Ok(Local::now())
+        return Ok(Utc::now())
     }
 
     Err("Invalid datetime format".into())

@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Local};
+use chrono::{DateTime, Datelike, Utc};
 use clap::{Args, builder::ValueParser};
 use colored::Colorize;
 use timecard::{TimeEntry, Timecard};
@@ -10,15 +10,15 @@ use crate::format;
 pub struct LogArgs {
     /// Show entries on or after this date. If an end date is set but this is omitted, defaults to UNIX epoch (January 1, 1970).
     #[arg(short, long, value_parser = ValueParser::new(format::date_from_input))]
-    from_date: Option<DateTime<Local>>,
+    from_date: Option<DateTime<Utc>>,
 
     /// Show entries on or before this date. If a start date is set but this is omitted, defaults to today.
     #[arg(short, long, value_parser = ValueParser::new(format::date_from_input))]
-    to_date: Option<DateTime<Local>>,
+    to_date: Option<DateTime<Utc>>,
 
     /// Show entries from this specific date. If a date range is also provided, range entries are shown first, followed by entries from this date.
     #[arg(value_parser = ValueParser::new(format::date_from_input))]
-    date: Option<DateTime<Local>>,
+    date: Option<DateTime<Utc>>,
 
     /// Show every stored entry, ignoring any date range or specific day filters.
     #[arg(short, long)]
@@ -36,7 +36,7 @@ enum OutputFormat {
 }
 
 impl LogArgs {
-    pub fn new(day: Option<DateTime<Local>>, all: bool) -> LogArgs {
+    pub fn new(day: Option<DateTime<Utc>>, all: bool) -> LogArgs {
         LogArgs {
             from_date: None,
             to_date: None,
@@ -54,7 +54,7 @@ fn get_entry_csv(entry: &TimeEntry, delimiter: &str) -> String {
 }
 
 fn get_entry_log(entry: &TimeEntry) -> String {
-    let today = Local::now().num_days_from_ce();
+    let today = Utc::now().num_days_from_ce();
     let start_str = if entry.start().num_days_from_ce() != today && (entry.end().is_none() || entry.end().is_some_and(|end| end.num_days_from_ce() == today)) {
         format::datetime(&entry.start())
     } else {
@@ -77,7 +77,7 @@ fn log_for_entries(entries: &[&TimeEntry], format: OutputFormat) {
             }
         }
         OutputFormat::PrettyByDay => {
-            let mut current_day: Option<DateTime<Local>> = None;
+            let mut current_day: Option<DateTime<Utc>> = None;
             for entry in entries {
                 if current_day.is_none() || current_day.is_some_and(|day| day.num_days_from_ce() != entry.start().num_days_from_ce()) {
                     if current_day.is_some() {
@@ -120,8 +120,8 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
     }
 
     if show_range {
-        let from_date = args.from_date.unwrap_or(DateTime::UNIX_EPOCH.with_timezone(&Local));
-        let to_date = args.to_date.unwrap_or(Local::now());
+        let from_date = args.from_date.unwrap_or(DateTime::UNIX_EPOCH.with_timezone(&Utc));
+        let to_date = args.to_date.unwrap_or(Utc::now());
         let entries = timecard.filter_by_date_range(&from_date, &to_date);
 
         if entries.is_empty() && !show_day {
@@ -143,7 +143,7 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
     }
 
     if show_day {
-        let day = args.date.unwrap_or(Local::now());
+        let day = args.date.unwrap_or(Utc::now());
         let entries = timecard.filter_by_day(&day);
 
         if entries.is_empty() && !show_range {

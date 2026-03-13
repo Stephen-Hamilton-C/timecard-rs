@@ -1,7 +1,7 @@
 //! Start with `Timecard::new(Vec<TimeEntry>)`, the rest of the functions will explain themselves.
 use std::{fmt, str::FromStr};
 
-use chrono::{DateTime, Datelike, Duration, Local};
+use chrono::{DateTime, Datelike, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::error::{ClockError, TimecardFromStrError, UndoError, ValidationError};
@@ -14,14 +14,14 @@ mod tests;
 /// 
 /// # Fields
 /// 
-/// - `start` (`DateTime<Local>`) - The time this entry starts.
-/// - `end` (`Option<DateTime<Local>>`) - The time this entry ends.
+/// - `start` (`DateTime<Utc>`) - The time this entry starts.
+/// - `end` (`Option<DateTime<Utc>>`) - The time this entry ends.
 ///                                       If None, this time is assumed to be the current time
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct TimeEntry {
-    start: DateTime<Local>,
+    start: DateTime<Utc>,
     /// If None, this time is assumed to be the current time
-    end: Option<DateTime<Local>>,
+    end: Option<DateTime<Utc>>,
 }
 
 impl TimeEntry {
@@ -35,7 +35,7 @@ impl TimeEntry {
     /// 
     /// `error::ValidationError::InvertedEntry`:
     /// - If the end time is before the start time
-    pub fn new(start: DateTime<Local>, end: Option<DateTime<Local>>) -> Result<TimeEntry, ValidationError> {
+    pub fn new(start: DateTime<Utc>, end: Option<DateTime<Utc>>) -> Result<TimeEntry, ValidationError> {
         let entry = TimeEntry {
             start, end,
         };
@@ -44,12 +44,12 @@ impl TimeEntry {
     }
 
     /// Getter for start
-    pub fn start(&self) -> DateTime<Local> {
+    pub fn start(&self) -> DateTime<Utc> {
         self.start
     }
 
     /// Getter for end
-    pub fn end(&self) -> Option<DateTime<Local>> {
+    pub fn end(&self) -> Option<DateTime<Utc>> {
         self.end
     }
 
@@ -86,11 +86,11 @@ impl FromStr for TimeEntry {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let data_split: Vec<&str> = s.split(",").collect();
 
-        let start = DateTime::parse_from_rfc3339(data_split[0])?.with_timezone(&Local);
+        let start = DateTime::parse_from_rfc3339(data_split[0])?.with_timezone(&Utc);
 
-        let end: Option<DateTime<Local>>;
+        let end: Option<DateTime<Utc>>;
         if data_split.len() > 1 {
-            end = Some(DateTime::parse_from_rfc3339(data_split[1])?.with_timezone(&Local));
+            end = Some(DateTime::parse_from_rfc3339(data_split[1])?.with_timezone(&Utc));
         } else {
             end = None;
         }
@@ -109,7 +109,7 @@ pub struct Timecard {
     /// Purely for testing purposes.
     /// If set, this determines the value for the current time.
     #[serde(skip_serializing)]
-    now_override: Option<DateTime<Local>>,
+    now_override: Option<DateTime<Utc>>,
 }
 
 impl Timecard {
@@ -139,7 +139,7 @@ impl Timecard {
 
     /// Run validation checks on this Timecard
     pub fn validate(&self) -> Result<(), ValidationError> {
-        let mut prev_time = DateTime::UNIX_EPOCH.with_timezone(&Local);
+        let mut prev_time = DateTime::UNIX_EPOCH;
         let entry_count = self.entries.len();
         for (i, entry) in self.entries.iter().enumerate() {
             let is_last_entry = i == entry_count - 1;
@@ -162,8 +162,8 @@ impl Timecard {
         Ok(())
     }
 
-    fn now(&self) -> DateTime<Local> {
-        self.now_override.unwrap_or(Local::now())
+    fn now(&self) -> DateTime<Utc> {
+        self.now_override.unwrap_or(Utc::now())
     }
 
     /// Get a read-only slice of all the TimeEntry objects
@@ -184,12 +184,12 @@ impl Timecard {
     /// 
     /// # Arguments
     /// 
-    /// - `date` (`&DateTime<Local>`) - The date to filter by
+    /// - `date` (`&DateTime<Utc>`) - The date to filter by
     /// 
     /// # Returns
     /// 
     /// - `Vec<&TimeEntry>` - A list of entries filtered by the given date
-    pub fn filter_by_day(&self, date: &DateTime<Local>) -> Vec<&TimeEntry> {
+    pub fn filter_by_day(&self, date: &DateTime<Utc>) -> Vec<&TimeEntry> {
         self.filter_by_date_range(date, date)
     }
 
@@ -197,13 +197,13 @@ impl Timecard {
     /// 
     /// # Arguments
     /// 
-    /// - `from_date` (`&DateTime<Local>`) - The date at the start of the filter range, inclusive.
-    /// - `to_date` (`&DateTime<Local>`) - The date at the end of the filter range, inclusive.
+    /// - `from_date` (`&DateTime<Utc>`) - The date at the start of the filter range, inclusive.
+    /// - `to_date` (`&DateTime<Utc>`) - The date at the end of the filter range, inclusive.
     /// 
     /// # Returns
     /// 
     /// - `Vec<&TimeEntry>` - A list of entries filtered by the given date range
-    pub fn filter_by_date_range(&self, from_date: &DateTime<Local>, to_date: &DateTime<Local>) -> Vec<&TimeEntry> {
+    pub fn filter_by_date_range(&self, from_date: &DateTime<Utc>, to_date: &DateTime<Utc>) -> Vec<&TimeEntry> {
         let from_day = from_date.num_days_from_ce();
         let to_day = to_date.num_days_from_ce();
 
@@ -222,7 +222,7 @@ impl Timecard {
     /// 
     /// # Arguments
     /// 
-    /// - `time` (`DateTime<Local>`) - The time to start the entry
+    /// - `time` (`DateTime<Utc>`) - The time to start the entry
     /// 
     /// # Errors
     /// 
@@ -232,7 +232,7 @@ impl Timecard {
     /// - If the provided time is in the future
     /// `error::ClockError::BeforeLastEntry`
     /// - If the provided time is before the last recorded time
-    pub fn clock_in(&mut self, time: DateTime<Local>) -> Result<(), ClockError> {
+    pub fn clock_in(&mut self, time: DateTime<Utc>) -> Result<(), ClockError> {
         if self.is_clocked_in() {
             return Err(ClockError::AlreadyInState(crate::error::ClockState::In))
         }
@@ -262,7 +262,7 @@ impl Timecard {
     /// 
     /// # Arguments
     /// 
-    /// - `time` (`DateTime<Local>`) - The time to end the entry
+    /// - `time` (`DateTime<Utc>`) - The time to end the entry
     /// 
     /// # Errors
     /// 
@@ -272,7 +272,7 @@ impl Timecard {
     /// - If the provided time is in the future
     /// `error::ClockError::BeforeLastEntry`
     /// - If the provided time is before the last recorded time
-    pub fn clock_out(&mut self, time: DateTime<Local>) -> Result<(), ClockError> {
+    pub fn clock_out(&mut self, time: DateTime<Utc>) -> Result<(), ClockError> {
         if self.is_clocked_out() {
             return Err(ClockError::AlreadyInState(crate::error::ClockState::Out))
         }
@@ -313,13 +313,13 @@ impl Timecard {
     /// 
     /// # Arguments
     /// 
-    /// - `date` (`&DateTime<Local>`) - The date to calculate time worked
+    /// - `date` (`&DateTime<Utc>`) - The date to calculate time worked
     /// - `include_now` (`bool`) - Whether the current time is included in this calculation or not
     /// 
     /// # Returns
     /// 
     /// - `Duration` - The amount of time clocked in on the date provided.
-    pub fn get_duration_worked(&self, date: &DateTime<Local>, include_now: bool) -> Duration {
+    pub fn get_duration_worked(&self, date: &DateTime<Utc>, include_now: bool) -> Duration {
         let entries = self.filter_by_day(date);
 
         let mut total_duration = Duration::zero();
@@ -335,13 +335,13 @@ impl Timecard {
     /// 
     /// # Arguments
     /// 
-    /// - `date` (`&DateTime<Local>`) - The date to calculate time on break.
+    /// - `date` (`&DateTime<Utc>`) - The date to calculate time on break.
     /// - `include_now` (`bool`) - Whether the current time is included in this calculation or not
     /// 
     /// # Returns
     /// 
     /// - `Duration` - The amount of time clocked out on the date provided.
-    pub fn get_duration_on_break(&self, date: &DateTime<Local>, include_now: bool) -> Duration {
+    pub fn get_duration_on_break(&self, date: &DateTime<Utc>, include_now: bool) -> Duration {
         let entries = self.filter_by_day(date);
 
         let mut total_duration = Duration::zero();
@@ -363,13 +363,13 @@ impl Timecard {
     /// # Arguments
     /// 
     /// - `duration_to_work` (`Duration`) - Duration of a work day.
-    /// - `date` (`&DateTime<Local>`) - The date to calculate expected end time.
+    /// - `date` (`&DateTime<Utc>`) - The date to calculate expected end time.
     /// 
     /// # Returns
     /// 
-    /// - `Option<DateTime<Local>>` - The date and time expected to be done on the date provided,
+    /// - `Option<DateTime<Utc>>` - The date and time expected to be done on the date provided,
     ///                               or None if no entries are found on the given date.
-    pub fn get_expected_end_time(&self, duration_to_work: Duration, date: &DateTime<Local>) -> Option<DateTime<Local>> {
+    pub fn get_expected_end_time(&self, duration_to_work: Duration, date: &DateTime<Utc>) -> Option<DateTime<Utc>> {
         let time_on_break = self.get_duration_on_break(date, true);
 
         let entries = self.filter_by_day(date);
@@ -382,7 +382,7 @@ impl Timecard {
         Some(start_time + duration_to_work + time_on_break)
     }
 
-    fn get_last_time_or_now(&self, time: Option<DateTime<Local>>, previous_time: DateTime<Local>, include_now: bool) -> Option<DateTime<Local>> {
+    fn get_last_time_or_now(&self, time: Option<DateTime<Utc>>, previous_time: DateTime<Utc>, include_now: bool) -> Option<DateTime<Utc>> {
         if time.is_none() {
             let now = self.now();
             if include_now && now.num_days_from_ce() == previous_time.num_days_from_ce() {
