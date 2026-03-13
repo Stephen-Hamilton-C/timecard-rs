@@ -1,4 +1,4 @@
-use chrono::Local;
+use chrono::Utc;
 use colored::Colorize;
 use timecard::Timecard;
 
@@ -6,7 +6,7 @@ use crate::{format, config::Config};
 
 pub fn status(timecard: &Timecard) -> anyhow::Result<()> {
     let config = Config::get();
-    let now = Local::now();
+    let now = Utc::now();
     let entries = timecard.filter_by_day(&now);
 
     if entries.is_empty() {

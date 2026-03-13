@@ -7,7 +7,7 @@ mod chrono_humantime;
 use std::fs;
 
 use anyhow::{Context, Result};
-use chrono::{Duration, Local};
+use chrono::{Duration, Utc};
 use clap::Parser;
 use platform_dirs::AppDirs;
 use timecard::Timecard;
@@ -52,7 +52,7 @@ fn main() -> Result<()> {
     }
 
     if let Some(entry_lifetime_days) = config.entry_lifetime_days {
-        let now = Local::now();
+        let now = Utc::now();
         let start_datetime = now - Duration::days(entry_lifetime_days);
         let clean_entries = timecard.filter_by_date_range(&start_datetime, &now);
         let owned_entries = clean_entries.into_iter().cloned().collect();

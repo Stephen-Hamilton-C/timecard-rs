@@ -2,7 +2,7 @@ use std::{env::home_dir, fs, path::PathBuf};
 
 use colored::Colorize;
 use anyhow::Context;
-use chrono::{DateTime, Datelike, Local};
+use chrono::{DateTime, Datelike, Utc};
 use notify_rust::Notification;
 use serde::{Deserialize, Serialize};
 use timecard::Timecard;
@@ -26,7 +26,7 @@ pub struct NotifyArgs {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct NotifyData {
-    last_notification: Option<DateTime<Local>>,
+    last_notification: Option<DateTime<Utc>>,
 }
 
 impl Loadable<NotifyData> for NotifyData {
@@ -118,7 +118,7 @@ pub fn notify(args: &NotifyArgs, timecard: &Timecard, data_dir: &PathBuf) -> any
         let config = Config::get();
         let notify_path = data_dir.join("notify.json");
         let last_notif = NotifyData::load(&notify_path)?.last_notification;
-        let now = Local::now();
+        let now = Utc::now();
 
         // Check if user was already notified today
         if last_notif.is_none_or(|t| t.num_days_from_ce() != now.num_days_from_ce()) {
