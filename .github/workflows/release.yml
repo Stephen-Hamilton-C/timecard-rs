@@ -9,6 +9,8 @@ on:
 permissions:
   contents: write
 
+# TODO: Rebuild this from scratch - the action does not expect a Cargo workspace
+
 jobs:
   release:
     name: Release pushed tag
