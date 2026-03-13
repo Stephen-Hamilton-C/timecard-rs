@@ -3,7 +3,7 @@ use crate::error::ClockState;
 use super::*;
 
 fn get_ref_time() -> DateTime<Utc> {
-    DateTime::from_timestamp_millis(1314057600000).unwrap()
+    DateTime::from_timestamp_millis(1314129600000).unwrap()
 }
 
 #[test]
