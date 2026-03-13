@@ -29,16 +29,16 @@ $ timecard
 No log for today
 ```
 
-Add the library to your project with Cargo:
-```bash
-$ cargo add timecard
-```
-
 Ensure Cargo binaries are in your path by adding this to your `~/.bashrc`:
 ```bash
 export PATH="$PATH:$HOME/.cargo/bin"
 ```
 Then restart your terminal or run `source ~/.bashrc`.
+
+Add the library to your project with Cargo:
+```bash
+$ cargo add timecard
+```
 
 
 ## Usage
