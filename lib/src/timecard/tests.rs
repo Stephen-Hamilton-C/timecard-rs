@@ -25,7 +25,7 @@ fn rejects_bad_entry() {
     ];
     let err = Timecard::new(entries).unwrap_err();
     assert!(
-        matches!(err, ValidationError::InvertedEntry),
+        matches!(err, ValidationError::InvertedTime),
         "Expected ValidationError::InvertedEntry, got {err:?}",
     );
 }
@@ -259,16 +259,18 @@ fn reports_clocked_in_with_closed_and_open_entries() -> Result<(), Box<dyn std::
 #[test]
 fn filters_by_day_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let timecard = Timecard::new(vec![])?;
-    assert!(timecard.filter_by_day(&time).is_empty());
-    assert!(timecard.filter_by_day(&(time - Duration::days(1))).is_empty());
-    assert!(timecard.filter_by_day(&(time - Duration::weeks(52))).is_empty());
+    assert!(timecard.filter_by_day(&date).is_empty());
+    assert!(timecard.filter_by_day(&(date - Duration::days(1))).is_empty());
+    assert!(timecard.filter_by_day(&(date - Duration::weeks(52))).is_empty());
     Ok(())
 }
 
 #[test]
 fn filters_by_day_single_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let entries = vec![
         TimeEntry {
             start: time - Duration::minutes(10),
@@ -276,16 +278,17 @@ fn filters_by_day_single_open_entry() -> Result<(), Box<dyn std::error::Error>> 
         },
     ];
     let timecard = Timecard::new(entries.clone())?;
-    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_day(&time));
-    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_day(&(time - Duration::minutes(30))));
-    assert!(timecard.filter_by_day(&(time - Duration::days(1))).is_empty());
-    assert!(timecard.filter_by_day(&(time - Duration::weeks(52))).is_empty());
+    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_day(&date));
+    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_day(&(date - Duration::minutes(30))));
+    assert!(timecard.filter_by_day(&(date - Duration::days(1))).is_empty());
+    assert!(timecard.filter_by_day(&(date - Duration::weeks(52))).is_empty());
     Ok(())
 }
 
 #[test]
 fn filters_by_day_single_closed_past_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let entries = vec![
         TimeEntry {
             start: time - Duration::days(3) - Duration::minutes(10),
@@ -293,17 +296,18 @@ fn filters_by_day_single_closed_past_entry() -> Result<(), Box<dyn std::error::E
         }
     ];
     let timecard = Timecard::new(entries.clone())?;
-    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_day(&(time - Duration::days(3))));
-    assert!(timecard.filter_by_day(&(time - Duration::days(2))).is_empty());
-    assert!(timecard.filter_by_day(&(time - Duration::days(4))).is_empty());
-    assert!(timecard.filter_by_day(&(time - Duration::days(1))).is_empty());
-    assert!(timecard.filter_by_day(&time).is_empty());
+    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_day(&(date - Duration::days(3))));
+    assert!(timecard.filter_by_day(&(date - Duration::days(2))).is_empty());
+    assert!(timecard.filter_by_day(&(date - Duration::days(4))).is_empty());
+    assert!(timecard.filter_by_day(&(date - Duration::days(1))).is_empty());
+    assert!(timecard.filter_by_day(&date).is_empty());
     Ok(())
 }
 
 #[test]
 fn filters_by_day_multiple_entries_on_different_days() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let entries = vec![
         TimeEntry {
             start: time - Duration::days(3) - Duration::minutes(10),
@@ -319,17 +323,18 @@ fn filters_by_day_multiple_entries_on_different_days() -> Result<(), Box<dyn std
         },
     ];
     let timecard = Timecard::new(entries.clone())?;
-    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(time - Duration::days(3))));
-    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&(time - Duration::days(2))));
-    assert_eq!(vec![&entries[2]], timecard.filter_by_day(&(time - Duration::days(1))));
-    assert!(timecard.filter_by_day(&(time - Duration::days(4))).is_empty());
-    assert!(timecard.filter_by_day(&time).is_empty());
+    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(date - Duration::days(3))));
+    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&(date - Duration::days(2))));
+    assert_eq!(vec![&entries[2]], timecard.filter_by_day(&(date - Duration::days(1))));
+    assert!(timecard.filter_by_day(&(date - Duration::days(4))).is_empty());
+    assert!(timecard.filter_by_day(&date).is_empty());
     Ok(())
 }
 
 #[test]
 fn filters_by_day_entry_spanning_two_days() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let entries = vec![
         TimeEntry {
             start: time - Duration::days(3) - Duration::minutes(10),
@@ -341,17 +346,18 @@ fn filters_by_day_entry_spanning_two_days() -> Result<(), Box<dyn std::error::Er
         },
     ];
     let timecard = Timecard::new(entries.clone())?;
-    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(time - Duration::days(3))));
-    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&(time - Duration::days(2))));
-    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&(time - Duration::days(1))));
-    assert!(timecard.filter_by_day(&(time - Duration::days(4))).is_empty());
-    assert!(timecard.filter_by_day(&time).is_empty());
+    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(date - Duration::days(3))));
+    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&(date - Duration::days(2))));
+    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&(date - Duration::days(1))));
+    assert!(timecard.filter_by_day(&(date - Duration::days(4))).is_empty());
+    assert!(timecard.filter_by_day(&date).is_empty());
     Ok(())
 }
 
 #[test]
 fn filters_by_day_open_entry_spanning_multiple_days() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let entries = vec![
         TimeEntry {
             start: time - Duration::days(3) - Duration::minutes(10),
@@ -363,16 +369,17 @@ fn filters_by_day_open_entry_spanning_multiple_days() -> Result<(), Box<dyn std:
         },
     ];
     let timecard = Timecard::new(entries.clone())?;
-    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(time - Duration::days(3))));
-    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&(time - Duration::days(2))));
-    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&(time - Duration::days(1))));
-    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&time));
+    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(date - Duration::days(3))));
+    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&(date - Duration::days(2))));
+    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&(date - Duration::days(1))));
+    assert_eq!(vec![&entries[1]], timecard.filter_by_day(&date));
     Ok(())
 }
 
 #[test]
 fn filters_by_day_multi_day_entry_with_separate_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let entries = vec![
         TimeEntry {
             start: time - Duration::days(3),
@@ -384,16 +391,17 @@ fn filters_by_day_multi_day_entry_with_separate_open_entry() -> Result<(), Box<d
         },
     ];
     let timecard = Timecard::new(entries.clone())?;
-    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(time - Duration::days(3))));
-    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(time - Duration::days(2))));
-    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(time - Duration::days(1))));
-    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&time));
+    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(date - Duration::days(3))));
+    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(date - Duration::days(2))));
+    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&(date - Duration::days(1))));
+    assert_eq!(vec![&entries[0]], timecard.filter_by_day(&date));
     Ok(())
 }
 
 #[test]
 fn filters_by_date_range_multiple_closed_entries() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let entries = vec![
         TimeEntry {
             start: time - Duration::days(14) - Duration::hours(8),
@@ -417,14 +425,14 @@ fn filters_by_date_range_multiple_closed_entries() -> Result<(), Box<dyn std::er
         },
     ];
     let timecard = Timecard::new(entries.clone())?;
-    assert_eq!(vec![&entries[0]], timecard.filter_by_date_range(&(time - Duration::days(14)), &(time - Duration::days(14))));
-    assert_eq!(vec![&entries[1]], timecard.filter_by_date_range(&(time - Duration::days(13)), &(time - Duration::days(13))));
+    assert_eq!(vec![&entries[0]], timecard.filter_by_date_range(&(date - Duration::days(14)), &(date - Duration::days(14))));
+    assert_eq!(vec![&entries[1]], timecard.filter_by_date_range(&(date - Duration::days(13)), &(date - Duration::days(13))));
     assert_eq!(
         vec![
             &entries[0],
             &entries[1],
         ],
-        timecard.filter_by_date_range(&(time - Duration::days(14)), &(time - Duration::days(13))),
+        timecard.filter_by_date_range(&(date - Duration::days(14)), &(date - Duration::days(13))),
     );
     assert_eq!(
         vec![
@@ -433,17 +441,18 @@ fn filters_by_date_range_multiple_closed_entries() -> Result<(), Box<dyn std::er
             &entries[2],
             &entries[3],
         ],
-        timecard.filter_by_date_range(&(time - Duration::days(14)), &(time - Duration::days(12))),
+        timecard.filter_by_date_range(&(date - Duration::days(14)), &(date - Duration::days(12))),
     );
-    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_date_range(&(time - Duration::days(14)), &(time - Duration::days(8))));
-    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_date_range(&(time - Duration::days(20)), &time));
-    assert_eq!(vec![&entries[4]], timecard.filter_by_date_range(&(time - Duration::days(10)), &(time - Duration::days(8))));
+    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_date_range(&(date - Duration::days(14)), &(date - Duration::days(8))));
+    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_date_range(&(date - Duration::days(20)), &date));
+    assert_eq!(vec![&entries[4]], timecard.filter_by_date_range(&(date - Duration::days(10)), &(date - Duration::days(8))));
     Ok(())
 }
 
 #[test]
 fn filters_by_date_range_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let entries = vec![
         TimeEntry {
             start: time - Duration::days(2),
@@ -451,9 +460,9 @@ fn filters_by_date_range_open_entry() -> Result<(), Box<dyn std::error::Error>> 
         },
     ];
     let timecard = Timecard::new(entries.clone())?;
-    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_date_range(&(time - Duration::days(2)), &Utc::now()));
-    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_date_range(&(time - Duration::days(2)), &(time - Duration::days(2))));
-    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_date_range(&(time - Duration::days(3)), &Utc::now()));
+    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_date_range(&(date - Duration::days(2)), &Utc::now().date_naive()));
+    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_date_range(&(date - Duration::days(2)), &(date - Duration::days(2))));
+    assert_eq!(entries.iter().collect::<Vec<_>>(), timecard.filter_by_date_range(&(date - Duration::days(3)), &Utc::now().date_naive()));
     Ok(())
 }
 
@@ -951,202 +960,226 @@ fn get_duration_timecards(now: DateTime<Utc>) -> Result<Vec<Timecard>, Box<dyn s
 #[test]
 fn gets_duration_worked_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
     let timecard = &get_duration_timecards(now)?[0];
-    assert_eq!(Duration::hours(4), timecard.get_duration_worked(&time, true));
-    assert_eq!(Duration::hours(4), timecard.get_duration_worked(&time, false));
+    assert_eq!(Duration::hours(4), timecard.get_duration_worked(&date, true));
+    assert_eq!(Duration::hours(4), timecard.get_duration_worked(&date, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_worked_two_closed_entries_with_break() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
     let timecard = &get_duration_timecards(now)?[1];
-    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&time, true));
-    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&time, false));
+    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&date, true));
+    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&date, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_worked_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[2];
-    assert_eq!(Duration::hours(8) - Duration::minutes(5), timecard.get_duration_worked(&now, true));
-    assert_eq!(Duration::hours(8) - Duration::minutes(15), timecard.get_duration_worked(&now, false));
+    assert_eq!(Duration::hours(8) - Duration::minutes(5), timecard.get_duration_worked(&today, true));
+    assert_eq!(Duration::hours(8) - Duration::minutes(15), timecard.get_duration_worked(&today, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_worked_multi_day_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
     let timecard = &get_duration_timecards(now)?[3];
-    assert_eq!(Duration::days(1) + Duration::hours(7), timecard.get_duration_worked(&time, true));
-    assert_eq!(Duration::days(1) + Duration::hours(7), timecard.get_duration_worked(&time, false));
-    assert_eq!(Duration::days(1) + Duration::hours(7), timecard.get_duration_worked(&(time - Duration::days(1)), true));
-    assert_eq!(Duration::days(1) + Duration::hours(7), timecard.get_duration_worked(&(time - Duration::days(1)), false));
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecard.get_duration_worked(&date, true));
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecard.get_duration_worked(&date, false));
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecard.get_duration_worked(&(date - Duration::days(1)), true));
+    assert_eq!(Duration::days(1) + Duration::hours(7), timecard.get_duration_worked(&(date - Duration::days(1)), false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_worked_multi_day_multi_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
     let timecard = &get_duration_timecards(now)?[4];
-    assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(time - Duration::days(1)), true));
-    assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(time - Duration::days(1)), false));
-    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&time, true));
-    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&time, false));
-    assert_eq!(Duration::zero(), timecard.get_duration_worked(&(time - Duration::weeks(4)), true));
-    assert_eq!(Duration::zero(), timecard.get_duration_worked(&(time - Duration::weeks(4)), false));
+    assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(date - Duration::days(1)), true));
+    assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(date - Duration::days(1)), false));
+    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&date, true));
+    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&date, false));
+    assert_eq!(Duration::zero(), timecard.get_duration_worked(&(date - Duration::weeks(4)), true));
+    assert_eq!(Duration::zero(), timecard.get_duration_worked(&(date - Duration::weeks(4)), false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_worked_multi_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[5];
-    assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(time - Duration::days(1)), true));
-    assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(time - Duration::days(1)), false));
-    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&time, true));
-    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&time, false));
-    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&now, true));
-    assert_eq!(Duration::hours(4), timecard.get_duration_worked(&now, false));
+    assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(date - Duration::days(1)), true));
+    assert_eq!(Duration::hours(8), timecard.get_duration_worked(&(date - Duration::days(1)), false));
+    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&date, true));
+    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&date, false));
+    assert_eq!(Duration::hours(7), timecard.get_duration_worked(&today, true));
+    assert_eq!(Duration::hours(4), timecard.get_duration_worked(&today, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_worked_current_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[6];
-    assert_eq!(Duration::minutes(16), timecard.get_duration_worked(&now, true));
-    assert_eq!(Duration::minutes(15), timecard.get_duration_worked(&now, false));
+    assert_eq!(Duration::minutes(16), timecard.get_duration_worked(&today, true));
+    assert_eq!(Duration::minutes(15), timecard.get_duration_worked(&today, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_worked_current_day_all_closed() -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[7];
-    assert_eq!(Duration::minutes(17), timecard.get_duration_worked(&now, true));
-    assert_eq!(Duration::minutes(17), timecard.get_duration_worked(&now, false));
+    assert_eq!(Duration::minutes(17), timecard.get_duration_worked(&today, true));
+    assert_eq!(Duration::minutes(17), timecard.get_duration_worked(&today, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_worked_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[8];
-    assert_eq!(Duration::zero(), timecard.get_duration_worked(&time, true));
-    assert_eq!(Duration::zero(), timecard.get_duration_worked(&time, false));
-    assert_eq!(Duration::zero(), timecard.get_duration_worked(&now, true));
-    assert_eq!(Duration::zero(), timecard.get_duration_worked(&now, false));
+    assert_eq!(Duration::zero(), timecard.get_duration_worked(&date, true));
+    assert_eq!(Duration::zero(), timecard.get_duration_worked(&date, false));
+    assert_eq!(Duration::zero(), timecard.get_duration_worked(&today, true));
+    assert_eq!(Duration::zero(), timecard.get_duration_worked(&today, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_on_break_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
     let timecard = &get_duration_timecards(now)?[0];
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&time, true));
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&time, false));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&date, true));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&date, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_on_break_two_closed_entries_with_break() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
     let timecard = &get_duration_timecards(now)?[1];
-    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&time, true));
-    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&time, false));
+    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&date, true));
+    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&date, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_on_break_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[2];
-    assert_eq!(Duration::minutes(5), timecard.get_duration_on_break(&now, true));
-    assert_eq!(Duration::minutes(5), timecard.get_duration_on_break(&now, false));
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&time, true));
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&time, false));
+    assert_eq!(Duration::minutes(5), timecard.get_duration_on_break(&today, true));
+    assert_eq!(Duration::minutes(5), timecard.get_duration_on_break(&today, false));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&date, true));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&date, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_on_break_multi_day_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[3];
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&time, true));
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&time, false));
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&now, true));
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&now, false));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&date, true));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&date, false));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&today, true));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&today, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_on_break_multi_day_multi_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
     let timecard = &get_duration_timecards(now)?[4];
-    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&(time - Duration::days(1)), true));
-    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&(time - Duration::days(1)), false));
-    assert_eq!(Duration::hours(2), timecard.get_duration_on_break(&time, true));
-    assert_eq!(Duration::hours(2), timecard.get_duration_on_break(&time, false));
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&(time - Duration::weeks(4)), true));
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&(time - Duration::weeks(4)), false));
+    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&(date - Duration::days(1)), true));
+    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&(date - Duration::days(1)), false));
+    assert_eq!(Duration::hours(2), timecard.get_duration_on_break(&date, true));
+    assert_eq!(Duration::hours(2), timecard.get_duration_on_break(&date, false));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&(date - Duration::weeks(4)), true));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&(date - Duration::weeks(4)), false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_on_break_multi_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[5];
-    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&(time - Duration::days(1)), true));
-    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&(time - Duration::days(1)), false));
-    assert_eq!(Duration::hours(2), timecard.get_duration_on_break(&time, true));
-    assert_eq!(Duration::hours(2), timecard.get_duration_on_break(&time, false));
-    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&now, true));
-    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&now, false));
+    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&(date - Duration::days(1)), true));
+    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&(date - Duration::days(1)), false));
+    assert_eq!(Duration::hours(2), timecard.get_duration_on_break(&date, true));
+    assert_eq!(Duration::hours(2), timecard.get_duration_on_break(&date, false));
+    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&today, true));
+    assert_eq!(Duration::hours(1), timecard.get_duration_on_break(&today, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_on_break_current_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[6];
-    assert_eq!(Duration::minutes(14), timecard.get_duration_on_break(&now, true));
-    assert_eq!(Duration::minutes(14), timecard.get_duration_on_break(&now, false));
+    assert_eq!(Duration::minutes(14), timecard.get_duration_on_break(&today, true));
+    assert_eq!(Duration::minutes(14), timecard.get_duration_on_break(&today, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_on_break_current_day_all_closed() -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now();
+    let today = now.date_naive();
     println!("{}, {}", get_ref_time(), now);
     let timecard = &get_duration_timecards(now.clone())?[7];
-    assert_eq!(Duration::minutes(13), timecard.get_duration_on_break(&now, true));
-    assert_eq!(Duration::minutes(11), timecard.get_duration_on_break(&now, false));
+    assert_eq!(Duration::minutes(13), timecard.get_duration_on_break(&today, true));
+    assert_eq!(Duration::minutes(11), timecard.get_duration_on_break(&today, false));
     Ok(())
 }
 
 #[test]
 fn gets_duration_on_break_empty_timecard() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[8];
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&time, true));
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&time, false));
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&now, true));
-    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&now, false));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&date, true));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&date, false));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&today, true));
+    assert_eq!(Duration::zero(), timecard.get_duration_on_break(&today, false));
     Ok(())
 }
 
@@ -1154,74 +1187,83 @@ fn gets_duration_on_break_empty_timecard() -> Result<(), Box<dyn std::error::Err
 #[test]
 fn gets_expected_end_time_single_closed_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
     let timecard = &get_duration_timecards(now)?[0];
-    assert_eq!(Some(time), timecard.get_expected_end_time(Duration::hours(8), &time));
+    assert_eq!(Some(time), timecard.get_expected_end_time(Duration::hours(8), &date));
     Ok(())
 }
 
 #[test]
 fn gets_expected_end_time_two_closed_entries_with_break() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
     let timecard = &get_duration_timecards(now)?[1];
-    assert_eq!(Some(time + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &time));
-    assert_eq!(Some(time), timecard.get_expected_end_time(Duration::hours(7), &time));
-    assert_eq!(Some(time - Duration::hours(3)), timecard.get_expected_end_time(Duration::hours(4), &time));
+    assert_eq!(Some(time + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &date));
+    assert_eq!(Some(time), timecard.get_expected_end_time(Duration::hours(7), &date));
+    assert_eq!(Some(time - Duration::hours(3)), timecard.get_expected_end_time(Duration::hours(4), &date));
     Ok(())
 }
 
 #[test]
 fn gets_expected_end_time_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[2];
-    assert_eq!(Some(now + Duration::minutes(5)), timecard.get_expected_end_time(Duration::hours(8), &now));
-    assert_eq!(Some(now + Duration::minutes(5) - Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(7), &now));
+    assert_eq!(Some(now + Duration::minutes(5)), timecard.get_expected_end_time(Duration::hours(8), &today));
+    assert_eq!(Some(now + Duration::minutes(5) - Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(7), &today));
     Ok(())
 }
 
 #[test]
 fn gets_expected_end_time_multi_day_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
     let timecard = &get_duration_timecards(now)?[3];
-    assert_eq!(Some(time - Duration::days(1)), timecard.get_expected_end_time(Duration::hours(8), &(time - Duration::days(1))));
+    assert_eq!(Some(time - Duration::days(1)), timecard.get_expected_end_time(Duration::hours(8), &(date - Duration::days(1))));
     Ok(())
 }
 
 #[test]
 fn gets_expected_end_time_multi_day_multi_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
     let timecard = &get_duration_timecards(now)?[4];
-    assert_eq!(Some(time - Duration::days(1)), timecard.get_expected_end_time(Duration::hours(8), &(time - Duration::days(1))));
-    assert_eq!(Some(time + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &time));
+    assert_eq!(Some(time - Duration::days(1)), timecard.get_expected_end_time(Duration::hours(8), &(date - Duration::days(1))));
+    assert_eq!(Some(time + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &date));
     Ok(())
 }
 
 #[test]
 fn gets_expected_end_time_multi_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let time = get_ref_time();
+    let date = time.date_naive();
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[5];
-    assert_eq!(Some(time - Duration::days(1)), timecard.get_expected_end_time(Duration::hours(8), &(time - Duration::days(1))));
-    assert_eq!(Some(time + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &time));
-    assert_eq!(Some(now + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &now));
+    assert_eq!(Some(time - Duration::days(1)), timecard.get_expected_end_time(Duration::hours(8), &(date - Duration::days(1))));
+    assert_eq!(Some(time + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &date));
+    assert_eq!(Some(now + Duration::hours(1)), timecard.get_expected_end_time(Duration::hours(8), &today));
     Ok(())
 }
 
 #[test]
 fn gets_expected_end_time_current_day_with_open_entry() -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[6];
-    assert_eq!(Some(now + Duration::hours(4) - Duration::minutes(16)), timecard.get_expected_end_time(Duration::hours(4), &now));
+    assert_eq!(Some(now + Duration::hours(4) - Duration::minutes(16)), timecard.get_expected_end_time(Duration::hours(4), &today));
     Ok(())
 }
 
 #[test]
 fn gets_expected_end_time_current_day_all_closed() -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now();
+    let today = now.date_naive();
     let timecard = &get_duration_timecards(now.clone())?[7];
-    assert_eq!(Some(now + Duration::hours(2) - Duration::minutes(17)), timecard.get_expected_end_time(Duration::hours(2), &now));
+    assert_eq!(Some(now + Duration::hours(2) - Duration::minutes(17)), timecard.get_expected_end_time(Duration::hours(2), &today));
     Ok(())
 }

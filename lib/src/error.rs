@@ -27,9 +27,9 @@ pub enum TimecardFromStrError {
 }
 
 /// An error that happened while a Timecard or TimeEntry was being constructed
-/// 
+///
 /// # Variants
-/// 
+///
 /// - `EndTimeRequired` - Thrown if an end entry is not the last entry
 /// - `Chronological` - Thrown if entries are not in chronological order
 /// - `InvertedEntry` - Thrown if an entry has an end time that comes before its start time
@@ -41,14 +41,14 @@ pub enum ValidationError {
     #[error("Entries must be in chronological order")]
     Chronological,
 
-    #[error("Entry start time must come before entry end time")]
-    InvertedEntry,
+    #[error("start time/date must come before end time/date")]
+    InvertedTime,
 }
 
 /// An error that happened while trying to clock a Timecard in or out.
-/// 
+///
 /// # Variants
-/// 
+///
 /// - `AlreadyInState(ClockState)` - Thrown when trying to clock into a state that the Timecard was already in
 /// - `TimeInFuture` - Thrown when trying to clock in or out into the future
 /// - `BeforeLastEntry` - Thrown when trying to clock in or out before the last recorded time
@@ -80,9 +80,9 @@ impl Display for ClockState {
 }
 
 /// An error that happened while trying to undo the last time record in a Timecard
-/// 
+///
 /// # Variants
-/// 
+///
 /// - `EmptyEntries` - Thrown when trying to undo on a Timecard with no entries
 #[derive(Debug, Error)]
 pub enum UndoError {
