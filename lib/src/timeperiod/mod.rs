@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{collections::HashMap, thread::current};
+use std::collections::HashMap;
 
 use chrono::{Datelike, Duration, NaiveDate, Utc, WeekdaySet};
 use serde::{Deserialize, Serialize};
@@ -51,15 +51,14 @@ impl TimePeriod {
         work_days: &Vec<NaiveDate>,
         timecard: Option<&Timecard>,
         requirements: &WorkPeriodRequirements,
-    ) -> (HashMap<NaiveDate, Duration>, Duration) {
+    ) -> HashMap<NaiveDate, Duration> {
         let today = Utc::now().num_days_from_ce();
         if self.start.num_days_from_ce() >= today {
-            return (HashMap::new(), Duration::zero())
+            return HashMap::new()
         }
 
         // Period overlaps the past, need to determine how much time has already been worked
         let mut map = HashMap::new();
-        let mut duration_worked = Duration::zero();
         let past_work_days: Vec<_> = work_days
             .iter()
             .filter(|work_day| work_day.num_days_from_ce() < today)
@@ -74,14 +73,13 @@ impl TimePeriod {
                 // No timecard, must be calculating expected time already worked
                 duration_worked_this_day = requirements.work_day_duration;
             }
-            duration_worked += duration_worked_this_day;
             map.insert(*past_work_day, duration_worked_this_day);
         }
 
-        (map, duration_worked)
+        map
     }
 
-    fn distribute_time(
+    fn get_expected_future_durations(
         &self,
         work_days: &Vec<NaiveDate>,
         extra_duration_needed: Duration,
@@ -142,17 +140,17 @@ impl TimePeriod {
         // Look at past days and get duration worked for each of them
         // Expected work duration = (set of past days - set of exempt_days).count * work_day_duration
         // Subtract the sum of all the past durations from the expected work duration
-        let time_worked = self.get_time_already_worked(&work_days, Some(timecard), requirements);
-        let expected_time_worked = self.get_time_already_worked(&work_days, None, requirements);
+        let past_duration_map = self.get_time_already_worked(&work_days, Some(timecard), requirements);
+        let time_worked: Duration = past_duration_map.values().copied().sum();
+        let expected_time_worked: Duration = self.get_time_already_worked(&work_days, None, requirements).values().copied().sum();
         let delta_worked = expected_time_worked - time_worked;
 
         // This duration must now be distributed to all future days in the period
-        
+        let future_duration_map = self.get_expected_future_durations(&work_days, delta_worked, requirements);
 
-        HashMap::from(work_days.into_iter().map(|day| {
-            let duration_worked = timecard.get_duration_worked(&day, true);
-            (day, Duration::hours(5))
-        }))
+        let mut all_durations = past_duration_map;
+        all_durations.extend(future_duration_map);
+        all_durations
     }
 }
 
