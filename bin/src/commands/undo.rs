@@ -3,8 +3,10 @@ use std::path::PathBuf;
 use chrono::{DateTime, Utc};
 use timecard::Timecard;
 
-use crate::{commands::{self, LogArgs}, traits::Saveable};
-
+use crate::{
+    commands::{self, LogArgs},
+    traits::Saveable,
+};
 
 pub fn undo(timecard: &mut Timecard, timecard_path: &PathBuf) -> anyhow::Result<()> {
     let mut undo_day: Option<DateTime<Utc>> = None;
@@ -16,10 +18,7 @@ pub fn undo(timecard: &mut Timecard, timecard_path: &PathBuf) -> anyhow::Result<
     timecard.save(timecard_path)?;
 
     println!("Successfully removed last entry.");
-    commands::log(
-        &LogArgs::new(undo_day, undo_day.is_none()),
-        timecard,
-    )?;
+    commands::log(&LogArgs::new(undo_day, undo_day.is_none()), timecard)?;
 
     Ok(())
 }

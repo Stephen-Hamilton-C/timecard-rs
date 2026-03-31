@@ -10,7 +10,7 @@ pub fn status(timecard: &Timecard) -> anyhow::Result<()> {
 
     if entries.is_empty() {
         println!("{}", "No log for today".yellow());
-        return Ok(())
+        return Ok(());
     } else if timecard.is_clocked_in() {
         let last_entry = entries.last().unwrap();
         let fmt_time = format::time_or_datetime(&last_entry.start(), &now);

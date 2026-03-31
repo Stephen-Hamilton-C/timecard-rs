@@ -1,0 +1,6 @@
+edition = "2024"
+
+fn_single_line = true
+match_block_trailing_comma = true
+newline_style = "Unix"
+group_imports = "StdExternalCrate"

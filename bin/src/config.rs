@@ -7,7 +7,6 @@ use serde_valid::Validate;
 
 use crate::traits::Loadable;
 
-
 const DEFAULT_CONFIG: &str = include_str!("../assets/config.toml");
 static INSTANCE: OnceLock<Config> = OnceLock::new();
 
@@ -66,14 +65,15 @@ fn default_entry_lifetime_days() -> Option<i64> {
 impl Loadable<&'static Config> for Config {
     fn load(path: &std::path::PathBuf) -> anyhow::Result<&'static Config> {
         if let Some(config) = INSTANCE.get() {
-            return Ok(config)
+            return Ok(config);
         }
 
         if fs::exists(path).unwrap_or(false) {
             let config_data = fs::read_to_string(path)?;
-            let config: Config = toml::from_str(&config_data)
-                .context("Failed to parse config")?;
-            INSTANCE.set(config).expect("Config already loaded into memory!");
+            let config: Config = toml::from_str(&config_data).context("Failed to parse config")?;
+            INSTANCE
+                .set(config)
+                .expect("Config already loaded into memory!");
             Ok(Config::get())
         } else {
             fs::write(path, DEFAULT_CONFIG)?;

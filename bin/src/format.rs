@@ -4,7 +4,6 @@ use timecard::Timecard;
 
 use crate::config::Config;
 
-
 pub fn time(datetime: &DateTime<Utc>) -> String {
     let config = Config::get();
     let fmt = &config.time_fmt;
@@ -55,7 +54,7 @@ pub fn duration(duration: &Duration) -> String {
 fn from_input(input: &str) -> Option<DateTime<Utc>> {
     if let Ok(std_dur) = humantime::parse_duration(input) {
         if let Ok(td) = Duration::from_std(std_dur) {
-            return Some(Utc::now() - td)
+            return Some(Utc::now() - td);
         }
     }
 
@@ -69,31 +68,51 @@ fn from_input(input: &str) -> Option<DateTime<Utc>> {
 
 pub fn time_from_input(input: &str) -> Result<DateTime<Utc>, String> {
     if let Some(dt) = from_input(input) {
-        return Ok(dt)
+        return Ok(dt);
     }
 
-    const TIME_FORMATS: &[&str] = &["%H:%M", "%H:%M:%S", "%I:%M%p", "%I:%M %p", "%I:%M:%S%p", "%I:%M:%S %p", "%I%p", "%I %p", "%I%M%p", "%I%M%S%p"];
-    let time = TIME_FORMATS.iter().find_map(|fmt| NaiveTime::parse_from_str(input, fmt).ok());
+    const TIME_FORMATS: &[&str] = &[
+        "%H:%M",
+        "%H:%M:%S",
+        "%I:%M%p",
+        "%I:%M %p",
+        "%I:%M:%S%p",
+        "%I:%M:%S %p",
+        "%I%p",
+        "%I %p",
+        "%I%M%p",
+        "%I%M%S%p",
+    ];
+    let time = TIME_FORMATS
+        .iter()
+        .find_map(|fmt| NaiveTime::parse_from_str(input, fmt).ok());
     if let Some(specific_time) = time {
         let naive_dt = Local::now().date_naive().and_time(specific_time);
         return naive_dt.and_local_timezone(Local).single().map(|dt| dt.to_utc()).ok_or("Failed to parse NaiveTime".into())
     }
 
     const DATE_PREFIXES: &[&str] = &["%Y-%m-%dT", "%Y-%m-%d ", "%Y%m%d_", "%Y%m%dT"];
-    let datetime_formats: Vec<String> = DATE_PREFIXES.iter()
-        .flat_map(|date| TIME_FORMATS.iter().map(move |time| format!("{}{}", date, time)))
+    let datetime_formats: Vec<String> = DATE_PREFIXES
+        .iter()
+        .flat_map(|date| {
+            TIME_FORMATS
+                .iter()
+                .map(move |time| format!("{}{}", date, time))
+        })
         .collect();
-    let datetime = datetime_formats.iter().find_map(|fmt| NaiveDateTime::parse_from_str(input, fmt).ok());
+    let datetime = datetime_formats
+        .iter()
+        .find_map(|fmt| NaiveDateTime::parse_from_str(input, fmt).ok());
     if let Some(specific_datetime) = datetime {
         return specific_datetime.and_local_timezone(Local).single().map(|dt| dt.to_utc()).ok_or("Failed to parse NaiveDateTime".into())
     }
 
     if let Ok(minutes) = input.parse::<i64>() {
-        return Ok(Utc::now() - Duration::minutes(minutes))
+        return Ok(Utc::now() - Duration::minutes(minutes));
     }
 
     if input.to_lowercase() == "now" {
-        return Ok(Utc::now())
+        return Ok(Utc::now());
     }
 
     Err("Invalid datetime format".into())
@@ -101,29 +120,31 @@ pub fn time_from_input(input: &str) -> Result<DateTime<Utc>, String> {
 
 pub fn date_from_input(input: &str) -> Result<DateTime<Utc>, String> {
     if let Some(dt) = from_input(input) {
-        return Ok(dt)
+        return Ok(dt);
     }
 
     const DATE_FORMATS: &[&str] = &["%Y-%m-%d", "%m/%d/%Y"];
-    let date = DATE_FORMATS.iter().find_map(|fmt| NaiveDate::parse_from_str(input, fmt).ok());
+    let date = DATE_FORMATS
+        .iter()
+        .find_map(|fmt| NaiveDate::parse_from_str(input, fmt).ok());
     if let Some(specific_date) = date {
         let naive_dt = specific_date.and_time(NaiveTime::parse_from_str("12:00", "%H:%M").unwrap());
         return Local.from_local_datetime(&naive_dt).single().map(|dt| dt.to_utc()).ok_or("Failed to parse NaiveDate".into())
     }
 
     if let Ok(days) = input.parse::<i64>() {
-        return Ok(Utc::now() - Duration::days(days))
+        return Ok(Utc::now() - Duration::days(days));
     }
 
     if input.to_lowercase() == "today" {
-        return Ok(Utc::now())
+        return Ok(Utc::now());
     }
 
     Err("Invalid datetime format".into())
 }
 
 
-pub fn print_status(timecard: &Timecard, date: &DateTime<Utc>) {
+pub fn print_status(timecard: &Timecard, date: &NaiveDate<Utc>) {
     let config = Config::get();
     let duration_worked = timecard.get_duration_worked(&date, true);
     let duration_on_break = timecard.get_duration_on_break(&date, true);
