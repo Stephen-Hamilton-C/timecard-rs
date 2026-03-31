@@ -9,7 +9,8 @@ use crate::{Timecard, error::ValidationError};
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, PartialEq, Clone)]
+// TODO: Need to (de)serialize WeekdaySet
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct WorkPeriodRequirements {
     pub work_days_of_week: WeekdaySet,
     pub work_day_duration: Duration,
