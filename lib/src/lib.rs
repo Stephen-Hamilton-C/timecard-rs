@@ -9,6 +9,7 @@
 pub mod error;
 pub mod timecard;
 pub mod timeperiod;
+pub mod serializable;
 
 pub use timecard::{TimeEntry, Timecard};
 

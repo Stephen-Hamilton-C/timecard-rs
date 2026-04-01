@@ -1,18 +1,17 @@
 use core::fmt;
 use std::collections::HashMap;
 
-use chrono::{Datelike, Duration, NaiveDate, Utc, WeekdaySet};
+use chrono::{Datelike, Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::{Timecard, error::ValidationError};
+use crate::{Timecard, error::ValidationError, serializable::SerializableWeekdaySet};
 
 #[cfg(test)]
 mod tests;
 
-// TODO: Need to (de)serialize WeekdaySet
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct WorkPeriodRequirements {
-    pub work_days_of_week: WeekdaySet,
+    pub work_days_of_week: SerializableWeekdaySet,
     pub work_day_duration: Duration,
     pub exempt_days: Vec<NaiveDate>,
     pub round_durations_to: Duration,
@@ -133,6 +132,7 @@ impl TimePeriod {
             current_day += Duration::days(1);
             if requirements
                 .work_days_of_week
+                .0
                 .contains(current_day.weekday())
             {
                 work_days.push(current_day);
