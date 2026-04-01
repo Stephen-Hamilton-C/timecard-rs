@@ -1,5 +1,5 @@
 use core::fmt;
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
 use chrono::{Datelike, Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
@@ -21,11 +21,18 @@ pub struct WorkPeriodRequirements {
 pub struct TimePeriod {
     start: NaiveDate,
     end: NaiveDate,
+
+    #[serde(skip_serializing)]
+    today_override: Option<NaiveDate>,
 }
 
 impl TimePeriod {
     pub fn new(start: NaiveDate, end: NaiveDate) -> Result<TimePeriod, ValidationError> {
-        let period = TimePeriod { start, end };
+        let period = TimePeriod {
+            start,
+            end,
+            today_override: None,
+        };
 
         period.validate().and(Ok(period))
     }
@@ -46,13 +53,19 @@ impl TimePeriod {
         Ok(())
     }
 
+    fn today(&self) -> i32 {
+        self.today_override
+            .unwrap_or(Utc::now().date_naive())
+            .num_days_from_ce()
+    }
+
     fn get_time_already_worked(
         &self,
         work_days: &Vec<NaiveDate>,
         timecard: Option<&Timecard>,
         requirements: &WorkPeriodRequirements,
     ) -> HashMap<NaiveDate, Duration> {
-        let today = Utc::now().num_days_from_ce();
+        let today = self.today();
         if self.start.num_days_from_ce() >= today {
             return HashMap::new();
         }
@@ -65,9 +78,7 @@ impl TimePeriod {
             .collect();
         for past_work_day in past_work_days {
             let duration_worked_this_day: Duration;
-            if requirements.exempt_days.contains(past_work_day) {
-                duration_worked_this_day = requirements.work_day_duration
-            } else if let Some(timecard) = timecard {
+            if let Some(timecard) = timecard {
                 duration_worked_this_day = timecard.get_duration_worked(past_work_day, true);
             } else {
                 // No timecard, must be calculating expected time already worked
@@ -85,7 +96,7 @@ impl TimePeriod {
         extra_duration_needed: Duration,
         requirements: &WorkPeriodRequirements,
     ) -> HashMap<NaiveDate, Duration> {
-        let today = Utc::now().num_days_from_ce();
+        let today = self.today();
         if self.end.num_days_from_ce() < today {
             return HashMap::new();
         }
@@ -96,14 +107,6 @@ impl TimePeriod {
         let future_work_days: Vec<_> = work_days
             .iter()
             .filter(|work_day| work_day.num_days_from_ce() >= today)
-            .filter(|future_work_day| {
-                return if requirements.exempt_days.contains(*future_work_day) {
-                    duration_needed -= requirements.work_day_duration;
-                    false
-                } else {
-                    true
-                };
-            })
             .collect();
         while duration_needed > Duration::zero() {
             for future_work_day in future_work_days.clone() {
@@ -124,19 +127,21 @@ impl TimePeriod {
         &self,
         timecard: &Timecard,
         requirements: &WorkPeriodRequirements,
-    ) -> HashMap<NaiveDate, Duration> {
-        let mut work_days = vec![self.start];
+    ) -> HashMap<NaiveDate, Option<Duration>> {
+        let mut all_days = vec![self.start];
         let mut current_day = self.start;
         while current_day != self.end {
             current_day += Duration::days(1);
-            if requirements
-                .work_days_of_week
-                .0
-                .contains(current_day.weekday())
-            {
-                work_days.push(current_day);
-            }
+            all_days.push(current_day);
         }
+        let work_days = all_days
+            .iter()
+            .filter(|day| {
+                requirements.work_days_of_week.0.contains(day.weekday())
+                    && !requirements.exempt_days.contains(day)
+            })
+            .cloned()
+            .collect();
 
         // I need to determine how much time has already been worked
         // Look at past days and get duration worked for each of them
@@ -156,9 +161,14 @@ impl TimePeriod {
         let future_duration_map =
             self.get_expected_future_durations(&work_days, delta_worked, requirements);
 
-        let mut all_durations = past_duration_map;
-        all_durations.extend(future_duration_map);
-        all_durations
+        let mut duration_map = map_to_option(past_duration_map);
+        duration_map.extend(map_to_option(future_duration_map));
+        for day in all_days {
+            if !duration_map.contains_key(&day) {
+                duration_map.insert(day, None);
+            }
+        }
+        duration_map
     }
 }
 
@@ -166,4 +176,8 @@ impl fmt::Display for TimePeriod {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} - {}", self.start, self.end)
     }
+}
+
+fn map_to_option<K: Eq + Hash, V>(map: HashMap<K, V>) -> HashMap<K, Option<V>> {
+    map.into_iter().map(|(k, v)| (k, Some(v))).collect()
 }
