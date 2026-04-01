@@ -123,17 +123,26 @@ impl TimePeriod {
         map
     }
 
+    pub fn get_dates(&self) -> Vec<NaiveDate> {
+        let mut all_days = vec![self.start];
+        let mut current_day = self.start;
+        loop {
+            current_day += Duration::days(1);
+            all_days.push(current_day);
+
+            if current_day == self.end {
+                break;
+            }
+        }
+        all_days
+    }
+
     pub fn estimate_time_to_work(
         &self,
         timecard: &Timecard,
         requirements: &WorkPeriodRequirements,
     ) -> HashMap<NaiveDate, Option<Duration>> {
-        let mut all_days = vec![self.start];
-        let mut current_day = self.start;
-        while current_day != self.end {
-            current_day += Duration::days(1);
-            all_days.push(current_day);
-        }
+        let all_days = self.get_dates();
         let work_days = all_days
             .iter()
             .filter(|day| {
