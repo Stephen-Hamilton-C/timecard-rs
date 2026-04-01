@@ -13,5 +13,6 @@ path = "src/lib.rs"
 
 [dependencies]
 chrono = { workspace = true }
+itertools = "0.14.0"
 serde = { workspace = true }
 thiserror = "2.0.18"
