@@ -1,7 +1,7 @@
-use chrono::{Duration, NaiveDate, Weekday, WeekdaySet};
+use chrono::{DateTime, Duration, NaiveDate, NaiveTime, Weekday, WeekdaySet};
 
 use super::*;
-use crate::serializable::SerializableWeekdaySet;
+use crate::{TimeEntry, serializable::SerializableWeekdaySet};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -9,6 +9,11 @@ use crate::serializable::SerializableWeekdaySet;
 
 fn date(year: i32, month: u32, day: u32) -> NaiveDate {
     NaiveDate::from_ymd_opt(year, month, day).unwrap()
+}
+
+fn datetime(date: NaiveDate, hour: u32, min: u32, sec: u32) -> DateTime<Utc> {
+    date.and_time(NaiveTime::from_hms_opt(hour, min, sec).unwrap())
+        .and_utc()
 }
 
 fn mon_fri_requirements() -> WorkPeriodRequirements {
@@ -82,13 +87,60 @@ fn estimate_time_to_work_past_period_uses_timecard_entries() {
 }
 
 #[test]
-fn estimate_time_to_work_future_period_returns_full_day_durations() {
-    todo!()
+fn estimate_time_to_work_future_period_returns_full_day_durations()
+-> Result<(), Box<dyn std::error::Error>> {
+    let period_start = date(2026, 3, 30);
+    let period_end = date(2026, 4, 3);
+    let mut period = TimePeriod::new(period_start, period_end)?;
+    let today = period_start + Duration::days(2);
+    period.today_override = Some(today);
+    let timecard = Timecard::new(vec![
+        TimeEntry::new(
+            datetime(period_start, 8, 0, 0),
+            Some(datetime(period_start, 16, 0, 0)),
+        )?,
+        TimeEntry::new(
+            datetime(period_start + Duration::days(1), 8, 0, 0),
+            Some(datetime(period_start + Duration::days(1), 16, 0, 0)),
+        )?,
+        TimeEntry::new(
+            datetime(period_start + Duration::days(2), 8, 0, 0),
+            Some(datetime(period_start + Duration::days(2), 16, 0, 0)),
+        )?,
+    ])?;
+    let reqs = mon_fri_requirements();
+    let estimate = period.estimate_time_to_work(&timecard, &reqs);
+    for (_day, duration) in estimate {
+        assert_eq!(duration, Some(reqs.work_day_duration));
+    }
+    Ok(())
 }
 
 #[test]
-fn estimate_time_to_work_distributes_deficit_across_future_days() {
-    todo!()
+fn estimate_time_to_work_distributes_deficit_across_future_days()
+-> Result<(), Box<dyn std::error::Error>> {
+    let period_start = date(2026, 3, 30);
+    let period_end = date(2026, 4, 3);
+    let mut period = TimePeriod::new(period_start, period_end)?;
+    let today = period_start + Duration::days(2);
+    period.today_override = Some(today);
+    let timecard = Timecard::new(vec![
+        TimeEntry::new(
+            datetime(period_start, 8, 0, 0),
+            Some(datetime(period_start, 15, 0, 0)),
+        )?,
+        TimeEntry::new(
+            datetime(period_start + Duration::days(1), 8, 0, 0),
+            Some(datetime(period_start + Duration::days(1), 16, 0, 0)),
+        )?,
+        TimeEntry::new(
+            datetime(period_start + Duration::days(2), 8, 0, 0),
+            Some(datetime(period_start + Duration::days(2), 16, 0, 0)),
+        )?,
+    ])?;
+    let reqs = mon_fri_requirements();
+    let estimate = period.estimate_time_to_work(&timecard, &reqs);
+    todo!();
 }
 
 #[test]
