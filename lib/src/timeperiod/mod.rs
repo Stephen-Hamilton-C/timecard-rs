@@ -87,7 +87,6 @@ impl TimePeriod {
     ) -> HashMap<NaiveDate, Duration> {
         let today = Utc::now().num_days_from_ce();
         if self.end.num_days_from_ce() < today {
-            // TODO: Return type?
             return HashMap::new();
         }
 
