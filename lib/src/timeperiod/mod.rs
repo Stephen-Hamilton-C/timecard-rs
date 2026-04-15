@@ -66,7 +66,7 @@ impl TimePeriod {
         requirements: &WorkPeriodRequirements,
     ) -> HashMap<NaiveDate, Duration> {
         let today = self.today();
-        if self.start.num_days_from_ce() >= today {
+        if self.start.num_days_from_ce() > today {
             return HashMap::new();
         }
 
@@ -97,7 +97,7 @@ impl TimePeriod {
         requirements: &WorkPeriodRequirements,
     ) -> HashMap<NaiveDate, Duration> {
         let today = self.today();
-        if self.end.num_days_from_ce() < today {
+        if self.end.num_days_from_ce() <= today {
             return HashMap::new();
         }
 
@@ -108,12 +108,25 @@ impl TimePeriod {
             .iter()
             .filter(|work_day| work_day.num_days_from_ce() >= today)
             .collect();
+
+        for future_work_day in future_work_days.clone() {
+            map.insert(*future_work_day, requirements.work_day_duration);
+        }
+
+        let direction = if duration_needed > Duration::zero() {
+            1
+        } else if duration_needed < Duration::zero() {
+            duration_needed = -duration_needed;
+            -1
+        } else {
+            0
+        };
         while duration_needed > Duration::zero() {
             for future_work_day in future_work_days.clone() {
                 map.entry(*future_work_day)
                     .and_modify(|d| *d -= requirements.round_durations_to)
                     .or_insert(requirements.work_day_duration - requirements.round_durations_to);
-                duration_needed -= requirements.round_durations_to;
+                duration_needed += requirements.round_durations_to * direction;
                 if duration_needed <= Duration::zero() {
                     break;
                 }
