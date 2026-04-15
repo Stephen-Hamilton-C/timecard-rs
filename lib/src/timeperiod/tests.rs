@@ -6,6 +6,7 @@ use crate::{TimeEntry, serializable::SerializableWeekdaySet};
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn date(year: i32, month: u32, day: u32) -> NaiveDate {
     NaiveDate::from_ymd_opt(year, month, day).unwrap()
@@ -120,8 +121,7 @@ fn estimate_time_to_work_past_period_uses_timecard_entries() {
 }
 
 #[test]
-fn estimate_time_to_work_future_period_returns_full_day_durations()
--> Result<(), Box<dyn std::error::Error>> {
+fn estimate_time_to_work_future_period_returns_full_day_durations() -> TestResult {
     let period_start = date(2026, 3, 30);
     let period_end = date(2026, 4, 3);
     let mut period = TimePeriod::new(period_start, period_end)?;
@@ -150,8 +150,7 @@ fn estimate_time_to_work_future_period_returns_full_day_durations()
 }
 
 #[test]
-fn estimate_time_to_work_distributes_deficit_across_future_days()
--> Result<(), Box<dyn std::error::Error>> {
+fn estimate_time_to_work_distributes_deficit_across_future_days() -> TestResult {
     let period_start = date(2026, 3, 30);
     let period_end = date(2026, 4, 3);
     let mut period = TimePeriod::new(period_start, period_end)?;
@@ -202,8 +201,7 @@ fn estimate_time_to_work_distributes_deficit_across_future_days()
 }
 
 #[test]
-fn estimate_time_to_work_distributes_excess_across_future_days()
--> Result<(), Box<dyn std::error::Error>> {
+fn estimate_time_to_work_distributes_excess_across_future_days() -> TestResult {
     let period_start = date(2026, 3, 30);
     let period_end = date(2026, 4, 3);
     let mut period = TimePeriod::new(period_start, period_end)?;
@@ -254,11 +252,13 @@ fn estimate_time_to_work_distributes_excess_across_future_days()
 }
 
 #[test]
-fn estimate_time_to_work_exempt_days_do_not_contribute_to_deficit() {
-    todo!()
+fn estimate_time_to_work_exempt_days_do_not_contribute_to_deficit() -> TestResult {
+    todo!();
+    Ok(())
 }
 
 #[test]
-fn estimate_time_to_work_duration_less_than_tick_does_not_contribute() {
-    todo!()
+fn estimate_time_to_work_duration_less_than_tick_does_not_contribute() -> TestResult {
+    todo!();
+    Ok(())
 }
