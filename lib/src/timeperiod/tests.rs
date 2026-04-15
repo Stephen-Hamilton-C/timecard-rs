@@ -35,6 +35,64 @@ fn mon_fri_requirements() -> WorkPeriodRequirements {
     }
 }
 
+fn make_period(
+    period_start: NaiveDate,
+    period_end: NaiveDate,
+    today_offset_days: i64,
+) -> Result<TimePeriod, Box<dyn std::error::Error>> {
+    let mut period = TimePeriod::new(period_start, period_end)?;
+    period.today_override = Some(period_start + Duration::days(today_offset_days));
+    Ok(period)
+}
+
+/// Each entry is (start_day_offset, start_h, start_m, end_day_offset, end_h, end_m).
+fn make_timecard(
+    period_start: NaiveDate,
+    entries: &[(i64, u32, u32, i64, u32, u32)],
+) -> Result<Timecard, Box<dyn std::error::Error>> {
+    let time_entries = entries
+        .iter()
+        .map(
+            |&(start_day, start_hr, start_min, end_day, end_hr, end_min)| {
+                TimeEntry::new(
+                    datetime(
+                        period_start + Duration::days(start_day),
+                        start_hr,
+                        start_min,
+                        0,
+                    ),
+                    Some(datetime(
+                        period_start + Duration::days(end_day),
+                        end_hr,
+                        end_min,
+                        0,
+                    )),
+                )
+            },
+        )
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(Timecard::new(time_entries)?)
+}
+
+fn estimate(
+    period_start: NaiveDate,
+    period_end: NaiveDate,
+    today_offset_days: i64,
+    entries: &[(i64, u32, u32, i64, u32, u32)],
+) -> Result<HashMap<NaiveDate, Option<Duration>>, Box<dyn std::error::Error>> {
+    let period = make_period(period_start, period_end, today_offset_days)?;
+    let timecard = make_timecard(period_start, entries)?;
+    let reqs = mon_fri_requirements();
+    Ok(period.estimate_time_to_work(&timecard, &reqs))
+}
+
+/// Standard Mon–Fri 5-day period starting 2026-03-30, today = day 2 (Wednesday).
+fn default_period_estimate(
+    entries: &[(i64, u32, u32, i64, u32, u32)],
+) -> Result<HashMap<NaiveDate, Option<Duration>>, Box<dyn std::error::Error>> {
+    estimate(date(2026, 3, 30), date(2026, 4, 3), 2, entries)
+}
+
 fn assert_dur_opt_eq(dur1: Option<Duration>, dur2: Option<Duration>, day: NaiveDate) {
     assert_eq!(dur1, dur2, "expected different duration for day {}", day);
 }
@@ -117,27 +175,11 @@ fn get_dates_returns_single_date() {
 
 #[test]
 fn estimate_time_to_work_past_period_uses_timecard_entries() -> TestResult {
-    let period_start = date(2026, 3, 30);
-    let period_end = date(2026, 4, 3);
-    let mut period = TimePeriod::new(period_start, period_end)?;
-    let today = period_start + Duration::days(2);
-    period.today_override = Some(today);
-    let timecard = Timecard::new(vec![
-        TimeEntry::new(
-            datetime(period_start, 7, 0, 0),
-            Some(datetime(period_start, 16, 0, 0)),
-        )?,
-        TimeEntry::new(
-            datetime(period_start + Duration::days(1), 8, 0, 0),
-            Some(datetime(period_start + Duration::days(1), 18, 0, 0)),
-        )?,
-        TimeEntry::new(
-            datetime(period_start + Duration::days(2), 8, 0, 0),
-            Some(datetime(period_start + Duration::days(2), 16, 0, 0)),
-        )?,
+    let estimate = default_period_estimate(&[
+        (0, 7, 0, 0, 16, 0),
+        (1, 8, 0, 1, 18, 0),
+        (2, 8, 0, 2, 16, 0),
     ])?;
-    let reqs = mon_fri_requirements();
-    let estimate = period.estimate_time_to_work(&timecard, &reqs);
 
     let day = date(2026, 3, 30);
     assert_dur_opt_eq(estimate[&day], Some(Duration::hours(9)), day);
@@ -148,27 +190,13 @@ fn estimate_time_to_work_past_period_uses_timecard_entries() -> TestResult {
 
 #[test]
 fn estimate_time_to_work_future_period_returns_full_day_durations() -> TestResult {
-    let period_start = date(2026, 3, 30);
-    let period_end = date(2026, 4, 3);
-    let mut period = TimePeriod::new(period_start, period_end)?;
-    let today = period_start + Duration::days(2);
-    period.today_override = Some(today);
-    let timecard = Timecard::new(vec![
-        TimeEntry::new(
-            datetime(period_start, 8, 0, 0),
-            Some(datetime(period_start, 16, 0, 0)),
-        )?,
-        TimeEntry::new(
-            datetime(period_start + Duration::days(1), 8, 0, 0),
-            Some(datetime(period_start + Duration::days(1), 16, 0, 0)),
-        )?,
-        TimeEntry::new(
-            datetime(period_start + Duration::days(2), 8, 0, 0),
-            Some(datetime(period_start + Duration::days(2), 16, 0, 0)),
-        )?,
-    ])?;
     let reqs = mon_fri_requirements();
-    let estimate = period.estimate_time_to_work(&timecard, &reqs);
+    let estimate = default_period_estimate(&[
+        (0, 8, 0, 0, 16, 0),
+        (1, 8, 0, 1, 16, 0),
+        (2, 8, 0, 2, 16, 0),
+    ])?;
+
     for (day, duration) in estimate {
         assert_dur_opt_eq(duration, Some(reqs.work_day_duration), day);
     }
@@ -177,30 +205,13 @@ fn estimate_time_to_work_future_period_returns_full_day_durations() -> TestResul
 
 #[test]
 fn estimate_time_to_work_distributes_deficit_across_future_days() -> TestResult {
-    let period_start = date(2026, 3, 30);
-    let period_end = date(2026, 4, 3);
-    let mut period = TimePeriod::new(period_start, period_end)?;
-    let today = period_start + Duration::days(2);
-    period.today_override = Some(today);
-    let timecard = Timecard::new(vec![
-        TimeEntry::new(
-            // 1 hour deficit
-            datetime(period_start, 8, 0, 0),
-            Some(datetime(period_start, 15, 0, 0)),
-        )?,
-        TimeEntry::new(
-            // Full day
-            datetime(period_start + Duration::days(1), 8, 0, 0),
-            Some(datetime(period_start + Duration::days(1), 16, 0, 0)),
-        )?,
-        TimeEntry::new(
-            // Full day
-            datetime(period_start + Duration::days(2), 8, 0, 0),
-            Some(datetime(period_start + Duration::days(2), 16, 0, 0)),
-        )?,
+    let estimate = default_period_estimate(&[
+        // 1 hour deficit
+        (0, 8, 0, 0, 15, 0),
+        (1, 8, 0, 1, 16, 0),
+        (2, 8, 0, 2, 16, 0),
     ])?;
-    let reqs = mon_fri_requirements();
-    let estimate = period.estimate_time_to_work(&timecard, &reqs);
+
     let day = date(2026, 3, 30);
     assert_dur_opt_eq(estimate[&day], Some(Duration::hours(7)), day);
     let day = date(2026, 3, 31);
@@ -228,30 +239,12 @@ fn estimate_time_to_work_distributes_deficit_across_future_days() -> TestResult 
 
 #[test]
 fn estimate_time_to_work_distributes_excess_across_future_days() -> TestResult {
-    let period_start = date(2026, 3, 30);
-    let period_end = date(2026, 4, 3);
-    let mut period = TimePeriod::new(period_start, period_end)?;
-    let today = period_start + Duration::days(2);
-    period.today_override = Some(today);
-    let timecard = Timecard::new(vec![
-        TimeEntry::new(
-            // 1 hour extra
-            datetime(period_start, 8, 0, 0),
-            Some(datetime(period_start, 17, 0, 0)),
-        )?,
-        TimeEntry::new(
-            // Full day
-            datetime(period_start + Duration::days(1), 8, 0, 0),
-            Some(datetime(period_start + Duration::days(1), 16, 0, 0)),
-        )?,
-        TimeEntry::new(
-            // Full day
-            datetime(period_start + Duration::days(2), 8, 0, 0),
-            Some(datetime(period_start + Duration::days(2), 16, 0, 0)),
-        )?,
+    let estimate = default_period_estimate(&[
+        (0, 8, 0, 0, 17, 0),
+        (1, 8, 0, 1, 16, 0),
+        (2, 8, 0, 2, 16, 0),
     ])?;
-    let reqs = mon_fri_requirements();
-    let estimate = period.estimate_time_to_work(&timecard, &reqs);
+
     let day = date(2026, 3, 30);
     assert_dur_opt_eq(estimate[&day], Some(Duration::hours(9)), day);
     let day = date(2026, 3, 31);
