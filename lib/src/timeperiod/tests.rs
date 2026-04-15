@@ -116,8 +116,34 @@ fn get_dates_returns_single_date() {
 // since there's extra time, but the extra time isn't large enough to cover an entire tick.
 
 #[test]
-fn estimate_time_to_work_past_period_uses_timecard_entries() {
-    todo!()
+fn estimate_time_to_work_past_period_uses_timecard_entries() -> TestResult {
+    let period_start = date(2026, 3, 30);
+    let period_end = date(2026, 4, 3);
+    let mut period = TimePeriod::new(period_start, period_end)?;
+    let today = period_start + Duration::days(2);
+    period.today_override = Some(today);
+    let timecard = Timecard::new(vec![
+        TimeEntry::new(
+            datetime(period_start, 7, 0, 0),
+            Some(datetime(period_start, 16, 0, 0)),
+        )?,
+        TimeEntry::new(
+            datetime(period_start + Duration::days(1), 8, 0, 0),
+            Some(datetime(period_start + Duration::days(1), 18, 0, 0)),
+        )?,
+        TimeEntry::new(
+            datetime(period_start + Duration::days(2), 8, 0, 0),
+            Some(datetime(period_start + Duration::days(2), 16, 0, 0)),
+        )?,
+    ])?;
+    let reqs = mon_fri_requirements();
+    let estimate = period.estimate_time_to_work(&timecard, &reqs);
+
+    let day = date(2026, 3, 30);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(9)), day);
+    let day = date(2026, 3, 31);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(10)), day);
+    Ok(())
 }
 
 #[test]
