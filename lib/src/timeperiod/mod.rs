@@ -124,9 +124,9 @@ impl TimePeriod {
         while duration_needed > Duration::zero() {
             for future_work_day in future_work_days.clone() {
                 map.entry(*future_work_day)
-                    .and_modify(|d| *d -= requirements.round_durations_to)
+                    .and_modify(|d| *d += requirements.round_durations_to * direction)
                     .or_insert(requirements.work_day_duration - requirements.round_durations_to);
-                duration_needed += requirements.round_durations_to * direction;
+                duration_needed -= requirements.round_durations_to;
                 if duration_needed <= Duration::zero() {
                     break;
                 }
