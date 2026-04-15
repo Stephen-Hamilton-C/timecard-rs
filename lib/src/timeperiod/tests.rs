@@ -34,6 +34,14 @@ fn mon_fri_requirements() -> WorkPeriodRequirements {
     }
 }
 
+fn assert_dur_opt_eq(dur1: Option<Duration>, dur2: Option<Duration>, day: NaiveDate) {
+    assert_eq!(dur1, dur2, "expected different duration for day {}", day);
+}
+
+fn assert_dur_eq(dur1: Duration, dur2: Duration, day: NaiveDate) {
+    assert_dur_opt_eq(Some(dur1), Some(dur2), day);
+}
+
 // ---------------------------------------------------------------------------
 // TimePeriod::new / validate
 // ---------------------------------------------------------------------------
@@ -136,12 +144,7 @@ fn estimate_time_to_work_future_period_returns_full_day_durations()
     let reqs = mon_fri_requirements();
     let estimate = period.estimate_time_to_work(&timecard, &reqs);
     for (day, duration) in estimate {
-        assert_eq!(
-            duration,
-            Some(reqs.work_day_duration),
-            "expected different duration for day {}",
-            day
-        );
+        assert_dur_opt_eq(duration, Some(reqs.work_day_duration), day);
     }
     Ok(())
 }
@@ -156,30 +159,40 @@ fn estimate_time_to_work_distributes_deficit_across_future_days()
     period.today_override = Some(today);
     let timecard = Timecard::new(vec![
         TimeEntry::new(
+            // 1 hour deficit
             datetime(period_start, 8, 0, 0),
             Some(datetime(period_start, 15, 0, 0)),
         )?,
         TimeEntry::new(
+            // Full day
             datetime(period_start + Duration::days(1), 8, 0, 0),
             Some(datetime(period_start + Duration::days(1), 16, 0, 0)),
         )?,
         TimeEntry::new(
+            // Full day
             datetime(period_start + Duration::days(2), 8, 0, 0),
             Some(datetime(period_start + Duration::days(2), 16, 0, 0)),
         )?,
     ])?;
     let reqs = mon_fri_requirements();
     let estimate = period.estimate_time_to_work(&timecard, &reqs);
-    assert_eq!(estimate[&date(2026, 3, 30)], Some(Duration::hours(7)));
-    assert_eq!(estimate[&date(2026, 3, 31)], Some(Duration::hours(8)));
-    assert_eq!(estimate[&date(2026, 4, 1)], Some(Duration::hours(8)));
-    assert_eq!(
-        estimate[&date(2026, 4, 2)],
-        Some(Duration::hours(8) + Duration::minutes(30))
+    let day = date(2026, 3, 30);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(7)), day);
+    let day = date(2026, 3, 31);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(8)), day);
+    let day = date(2026, 4, 1);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(8)), day);
+    let day = date(2026, 4, 2);
+    assert_dur_opt_eq(
+        estimate[&day],
+        Some(Duration::hours(8) + Duration::minutes(30)),
+        day,
     );
-    assert_eq!(
-        estimate[&date(2026, 4, 3)],
-        Some(Duration::hours(8) + Duration::minutes(30))
+    let day = date(2026, 4, 3);
+    assert_dur_opt_eq(
+        estimate[&day],
+        Some(Duration::hours(8) + Duration::minutes(30)),
+        day,
     );
     Ok(())
 }
