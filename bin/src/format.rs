@@ -60,7 +60,8 @@ fn from_input(input: &str) -> Option<DateTime<Utc>> {
     }
 
     if let Ok(std_time) = humantime::parse_rfc3339_weak(input) {
-        return Some(std_time.into())
+        let local_time: DateTime<Local> = std_time.into();
+        return Some(local_time.to_utc())
     }
 
     None
@@ -74,8 +75,8 @@ pub fn time_from_input(input: &str) -> Result<DateTime<Utc>, String> {
     const TIME_FORMATS: &[&str] = &["%H:%M", "%H:%M:%S", "%I:%M%p", "%I:%M %p", "%I:%M:%S%p", "%I:%M:%S %p", "%I%p", "%I %p", "%I%M%p", "%I%M%S%p"];
     let time = TIME_FORMATS.iter().find_map(|fmt| NaiveTime::parse_from_str(input, fmt).ok());
     if let Some(specific_time) = time {
-        let naive_dt = Utc::now().date_naive().and_time(specific_time);
-        return naive_dt.and_local_timezone(Utc).single().ok_or("Failed to parse NaiveTime".into())
+        let naive_dt = Local::now().date_naive().and_time(specific_time);
+        return naive_dt.and_local_timezone(Local).single().map(|dt| dt.to_utc()).ok_or("Failed to parse NaiveTime".into())
     }
 
     const DATE_PREFIXES: &[&str] = &["%Y-%m-%dT", "%Y-%m-%d ", "%Y%m%d_", "%Y%m%dT"];
@@ -84,7 +85,7 @@ pub fn time_from_input(input: &str) -> Result<DateTime<Utc>, String> {
         .collect();
     let datetime = datetime_formats.iter().find_map(|fmt| NaiveDateTime::parse_from_str(input, fmt).ok());
     if let Some(specific_datetime) = datetime {
-        return specific_datetime.and_local_timezone(Utc).single().ok_or("Failed to parse NaiveDateTime".into())
+        return specific_datetime.and_local_timezone(Local).single().map(|dt| dt.to_utc()).ok_or("Failed to parse NaiveDateTime".into())
     }
 
     if let Ok(minutes) = input.parse::<i64>() {
@@ -107,7 +108,7 @@ pub fn date_from_input(input: &str) -> Result<DateTime<Utc>, String> {
     let date = DATE_FORMATS.iter().find_map(|fmt| NaiveDate::parse_from_str(input, fmt).ok());
     if let Some(specific_date) = date {
         let naive_dt = specific_date.and_time(NaiveTime::parse_from_str("12:00", "%H:%M").unwrap());
-        return Utc.from_local_datetime(&naive_dt).single().ok_or("Failed to parse NaiveDate".into())
+        return Local.from_local_datetime(&naive_dt).single().map(|dt| dt.to_utc()).ok_or("Failed to parse NaiveDate".into())
     }
 
     if let Ok(days) = input.parse::<i64>() {
