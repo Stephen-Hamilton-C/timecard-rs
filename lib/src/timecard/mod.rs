@@ -239,13 +239,13 @@ impl Timecard {
 
         let now = self.now();
         if time > now {
-            return Err(ClockError::TimeInFuture)
+            return Err(ClockError::TimeInFuture(time))
         }
 
         if let Some(last_entry) = self.entries.last() {
             // If we're clocked out, it's impossible for the last end entry to be None
             if time < last_entry.end.unwrap() {
-                return Err(ClockError::BeforeLastEntry)
+                return Err(ClockError::BeforeLastEntry(time))
             }
         }
 
@@ -279,13 +279,13 @@ impl Timecard {
 
         let now = self.now();
         if time > now {
-            return Err(ClockError::TimeInFuture)
+            return Err(ClockError::TimeInFuture(time))
         }
 
         // We're clocked in, so there must be an entry, and the last end entry is None
         let last_entry = self.entries.last_mut().unwrap();
         if time < last_entry.start {
-            return Err(ClockError::BeforeLastEntry)
+            return Err(ClockError::BeforeLastEntry(time))
         }
         last_entry.end = Some(time);
         

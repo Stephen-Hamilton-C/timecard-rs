@@ -559,9 +559,10 @@ fn clock_in_errors_when_already_clocked_in() -> Result<(), Box<dyn std::error::E
 #[test]
 fn clock_in_errors_when_time_in_future() -> Result<(), Box<dyn std::error::Error>> {
     let mut timecard = Timecard::new(vec![])?;
-    let err = timecard.clock_in(Utc::now() + Duration::seconds(1)).unwrap_err();
+    let time = Utc::now() + Duration::seconds(1);
+    let err = timecard.clock_in(time).unwrap_err();
     assert!(
-        matches!(err, ClockError::TimeInFuture),
+        matches!(err, ClockError::TimeInFuture(time)),
         "Expected ClockError::TimeInFuture, got {err:?}",
     );
 
@@ -665,15 +666,17 @@ fn clock_out_errors_with_invalid_times() -> Result<(), Box<dyn std::error::Error
     assert!(timecard.is_clocked_in());
     assert!(!timecard.is_clocked_out());
 
-    let err = timecard.clock_out(now + Duration::hours(1)).unwrap_err();
+    let time = now + Duration::hours(1);
+    let err = timecard.clock_out(time).unwrap_err();
     assert!(
-        matches!(err, ClockError::TimeInFuture),
+        matches!(err, ClockError::TimeInFuture(time)),
         "Expected ClockError::TimeInFuture, got {err:?}",
     );
 
-    let err = timecard.clock_out(now - Duration::hours(5)).unwrap_err();
+    let time = now - Duration::hours(5);
+    let err = timecard.clock_out(time).unwrap_err();
     assert!(
-        matches!(err, ClockError::BeforeLastEntry),
+        matches!(err, ClockError::BeforeLastEntry(time)),
         "Expected ClockError::BeforeLastEntry, got {err:?}",
     );
     Ok(())

@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use chrono::{DateTime, Utc};
 use thiserror::Error;
 
 /// A catch-all for any error that could be thrown by `timecard`
@@ -56,11 +57,11 @@ pub enum ClockError {
     #[error("Already clocked {0}")]
     AlreadyInState(ClockState),
 
-    #[error("Time is in the future")]
-    TimeInFuture,
+    #[error("Time '{0}' is in the future")]
+    TimeInFuture(DateTime<Utc>),
 
-    #[error("Time is before last entry")]
-    BeforeLastEntry,
+    #[error("Time '{0}' is before last entry")]
+    BeforeLastEntry(DateTime<Utc>),
 }
 
 #[derive(Debug)]
