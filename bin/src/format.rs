@@ -1,4 +1,6 @@
 use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
+use colored::Colorize;
+use timecard::Timecard;
 
 use crate::config::Config;
 
@@ -117,4 +119,15 @@ pub fn date_from_input(input: &str) -> Result<DateTime<Utc>, String> {
     }
 
     Err("Invalid datetime format".into())
+}
+
+
+pub fn print_status(timecard: &Timecard, date: &DateTime<Utc>) {
+    let config = Config::get();
+    let duration_worked = timecard.get_duration_worked(&date, true);
+    let duration_on_break = timecard.get_duration_on_break(&date, true);
+    let end_time = timecard.get_expected_end_time(config.work_duration, &date).unwrap();
+    println!("Worked for {}", duration(&duration_worked).green());
+    println!("On break for {}", duration(&duration_on_break).red());
+    println!("Expected end time: {}", time(&end_time).cyan());
 }

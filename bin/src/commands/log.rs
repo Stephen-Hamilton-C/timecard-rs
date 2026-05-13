@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use chrono::{DateTime, Datelike, Utc};
 use clap::{Args, builder::ValueParser};
 use colored::Colorize;
@@ -68,11 +70,14 @@ fn get_entry_log(entry: &TimeEntry) -> String {
     log
 }
 
-fn log_for_entries(entries: &[&TimeEntry], format: OutputFormat) {
+fn log_for_entries(timecard: &Timecard, entries: &[&TimeEntry], format: OutputFormat) {
     match format {
         OutputFormat::Pretty => {
-            // TODO: Print summary for each day
+            let mut days = HashSet::<i32>::new();
             for entry in entries {
+                if days.insert(entry.start().num_days_from_ce()) {
+                    format::print_status(timecard, &entry.start());
+                }
                 println!("{}", get_entry_log(entry));
             }
         }
@@ -84,7 +89,8 @@ fn log_for_entries(entries: &[&TimeEntry], format: OutputFormat) {
                         println!();
                     }
                     current_day = Some(entry.start().clone());
-                    println!("{}:", format::date(&entry.start()).cyan())
+                    println!("{}:", format::date(&entry.start()).cyan());
+                    format::print_status(timecard, &entry.start());
                 }
 
                 println!("  {}", get_entry_log(entry));
@@ -111,10 +117,10 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
 
         let entries: Vec<&TimeEntry> = timecard.entries().iter().collect();
         if let Some(csv_sep) = &args.csv {
-            log_for_entries(&entries, OutputFormat::Csv(csv_sep.into()));
+            log_for_entries(timecard, &entries, OutputFormat::Csv(csv_sep.into()));
         } else {
             println!("{}", "All logged entries:".bold());
-            log_for_entries(&entries, OutputFormat::PrettyByDay);
+            log_for_entries(timecard, &entries, OutputFormat::PrettyByDay);
         }
         return Ok(())
     }
@@ -128,7 +134,7 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
             eprintln!("{}", "No entries fall within the given date range".yellow());
         } else if !entries.is_empty() {
             if let Some(csv_sep) = &args.csv {
-                log_for_entries(&entries, OutputFormat::Csv(csv_sep.into()));
+                log_for_entries(timecard, &entries, OutputFormat::Csv(csv_sep.into()));
             } else {
                 if args.from_date.is_some() && args.to_date.is_some() {
                     println!("Entries from {} to {}:", format::date(&from_date).cyan(), format::date(&to_date).cyan());
@@ -137,7 +143,7 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
                 } else if args.to_date.is_some() {
                     println!("Entries from {} to {}:", "forever ago".cyan().italic(), format::date(&to_date).cyan());
                 }
-                log_for_entries(&entries, OutputFormat::Pretty);
+                log_for_entries(timecard, &entries, OutputFormat::Pretty);
             }
         }
     }
@@ -150,14 +156,14 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
             eprintln!("{} {}", "No entries exist for".yellow(), format::date(&day).yellow());
         } else if !entries.is_empty() {
             if let Some(csv_sep) = &args.csv {
-                log_for_entries(&entries, OutputFormat::Csv(csv_sep.into()));
+                log_for_entries(timecard, &entries, OutputFormat::Csv(csv_sep.into()));
             } else {
                 if args.date.is_none() {
                     println!("Entries for {}:", "today".cyan().italic());
                 } else {
                     println!("Entries for {}:", format::date(&day).cyan());
                 }
-                log_for_entries(&entries, OutputFormat::Pretty);
+                log_for_entries(timecard, &entries, OutputFormat::Pretty);
             }
         }
     }
