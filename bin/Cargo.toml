@@ -12,7 +12,7 @@ name = "timecard"
 path = "src/main.rs"
 
 [dependencies]
-timecard = { version = "0.3.0", path = "../lib" }
+timecard = { version = "0.3.1", path = "../lib" }
 chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = "1.0.149"
