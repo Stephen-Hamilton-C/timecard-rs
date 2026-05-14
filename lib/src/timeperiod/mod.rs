@@ -137,13 +137,13 @@ impl TimePeriod {
     }
 
     pub fn get_dates(&self) -> Vec<NaiveDate> {
-        let mut all_days = vec![self.start];
+        let mut all_days = vec![];
         let mut current_day = self.start;
         loop {
-            current_day += Duration::days(1);
             all_days.push(current_day);
+            current_day += Duration::days(1);
 
-            if current_day == self.end {
+            if current_day > self.end {
                 break;
             }
         }
