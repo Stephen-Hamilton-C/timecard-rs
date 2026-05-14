@@ -273,17 +273,65 @@ fn estimate_time_to_work_distributes_excess_across_future_days() -> TestResult {
         Some(Duration::hours(8) - Duration::minutes(15)),
         day,
     );
+
     Ok(())
 }
 
 #[test]
 fn estimate_time_to_work_exempt_days_do_not_contribute_to_deficit() -> TestResult {
-    todo!();
+    let mut reqs = mon_fri_requirements();
+    reqs.exempt_days.push(date(2026, 5, 6));
+    let estimate = estimate(
+        date(2026, 5, 4),
+        date(2026, 5, 8),
+        3,
+        reqs,
+        &[
+            (0, 8, 0, 0, 16, 0),
+            (1, 8, 0, 1, 16, 0),
+            (3, 8, 0, 3, 16, 0),
+        ],
+    )?;
+    let day = date(2026, 5, 4);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(8)), day);
+    let day = date(2026, 5, 5);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(8)), day);
+    let day = date(2026, 5, 6);
+    assert_dur_opt_eq(estimate[&day], None, day);
+    let day = date(2026, 5, 7);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(8)), day);
+    let day = date(2026, 5, 8);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(8)), day);
+
     Ok(())
 }
 
 #[test]
 fn estimate_time_to_work_duration_less_than_tick_does_not_contribute() -> TestResult {
-    todo!();
+    let estimate = default_period_estimate(&[
+        (0, 8, 0, 0, 16, 4),
+        (1, 8, 0, 1, 16, 3),
+        (2, 8, 0, 2, 16, 0),
+    ])?;
+
+    let day = date(2026, 3, 30);
+    assert_dur_opt_eq(
+        estimate[&day],
+        Some(Duration::hours(8) + Duration::minutes(4)),
+        day,
+    );
+    let day = date(2026, 3, 31);
+    assert_dur_opt_eq(
+        estimate[&day],
+        Some(Duration::hours(8) + Duration::minutes(3)),
+        day,
+    );
+    let day = date(2026, 4, 1);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(8)), day);
+    let day = date(2026, 4, 2);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(8)), day);
+    let day = date(2026, 4, 3);
+    assert_dur_opt_eq(estimate[&day], Some(Duration::hours(8)), day);
+
     Ok(())
 }
