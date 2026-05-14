@@ -80,7 +80,7 @@ fn log_for_entries(timecard: &Timecard, entries: &[&TimeEntry], format: OutputFo
             let mut days = HashSet::<i32>::new();
             for entry in entries {
                 if days.insert(entry.start().num_days_from_ce()) {
-                    format::print_status(timecard, &entry.start());
+                    format::print_status(timecard, &entry.start().date_naive());
                 }
                 println!("{}", get_entry_log(entry));
             }
@@ -98,7 +98,7 @@ fn log_for_entries(timecard: &Timecard, entries: &[&TimeEntry], format: OutputFo
                     }
                     current_day = Some(entry.start().clone());
                     println!("{}:", format::date(&entry.start()).cyan());
-                    format::print_status(timecard, &entry.start());
+                    format::print_status(timecard, &entry.start().date_naive());
                 }
 
                 println!("  {}", get_entry_log(entry));
@@ -136,8 +136,9 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
     if show_range {
         let from_date = args
             .from_date
-            .unwrap_or(DateTime::UNIX_EPOCH.with_timezone(&Utc));
-        let to_date = args.to_date.unwrap_or(Utc::now());
+            .unwrap_or(DateTime::UNIX_EPOCH.with_timezone(&Utc))
+            .date_naive();
+        let to_date = args.to_date.unwrap_or(Utc::now()).date_naive();
         let entries = timecard.filter_by_date_range(&from_date, &to_date);
 
         if entries.is_empty() && !show_day {
@@ -149,20 +150,20 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
                 if args.from_date.is_some() && args.to_date.is_some() {
                     println!(
                         "Entries from {} to {}:",
-                        format::date(&from_date).cyan(),
-                        format::date(&to_date).cyan()
+                        format::date_naive(&from_date).cyan(),
+                        format::date_naive(&to_date).cyan()
                     );
                 } else if args.from_date.is_some() {
                     println!(
                         "Entries from {} to {}:",
-                        format::date(&from_date).cyan(),
+                        format::date_naive(&from_date).cyan(),
                         "today".cyan().italic()
                     );
                 } else if args.to_date.is_some() {
                     println!(
                         "Entries from {} to {}:",
                         "forever ago".cyan().italic(),
-                        format::date(&to_date).cyan()
+                        format::date_naive(&to_date).cyan()
                     );
                 }
                 log_for_entries(timecard, &entries, OutputFormat::Pretty);
@@ -171,14 +172,14 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
     }
 
     if show_day {
-        let day = args.date.unwrap_or(Utc::now());
+        let day = args.date.unwrap_or(Utc::now()).date_naive();
         let entries = timecard.filter_by_day(&day);
 
         if entries.is_empty() && !show_range {
             eprintln!(
                 "{} {}",
                 "No entries exist for".yellow(),
-                format::date(&day).yellow()
+                format::date_naive(&day).yellow()
             );
         } else if !entries.is_empty() {
             if let Some(csv_sep) = &args.csv {
@@ -187,7 +188,7 @@ pub fn log(args: &LogArgs, timecard: &Timecard) -> anyhow::Result<()> {
                 if args.date.is_none() {
                     println!("Entries for {}:", "today".cyan().italic());
                 } else {
-                    println!("Entries for {}:", format::date(&day).cyan());
+                    println!("Entries for {}:", format::date_naive(&day).cyan());
                 }
                 log_for_entries(timecard, &entries, OutputFormat::Pretty);
             }

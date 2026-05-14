@@ -59,7 +59,7 @@ fn main() -> Result<()> {
     }
 
     if let Some(entry_lifetime_days) = config.entry_lifetime_days {
-        let now = Utc::now();
+        let now = Utc::now().date_naive();
         let start_datetime = now - Duration::days(entry_lifetime_days);
         let clean_entries = timecard.filter_by_date_range(&start_datetime, &now);
         let owned_entries = clean_entries.into_iter().cloned().collect();

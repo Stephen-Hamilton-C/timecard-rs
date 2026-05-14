@@ -6,7 +6,8 @@ use crate::format;
 
 pub fn status(timecard: &Timecard) -> anyhow::Result<()> {
     let now = Utc::now();
-    let entries = timecard.filter_by_day(&now);
+    let today = now.date_naive();
+    let entries = timecard.filter_by_day(&today);
 
     if entries.is_empty() {
         println!("{}", "No log for today".yellow());
@@ -22,6 +23,6 @@ pub fn status(timecard: &Timecard) -> anyhow::Result<()> {
         println!("Clocked {} since {}", "OUT".red(), fmt_time.red());
     }
 
-    format::print_status(timecard, &now);
+    format::print_status(timecard, &today);
     Ok(())
 }

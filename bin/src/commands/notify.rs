@@ -124,10 +124,11 @@ pub fn notify(args: &NotifyArgs, timecard: &Timecard, data_dir: &PathBuf) -> any
         let notify_path = data_dir.join("notify.json");
         let last_notif = NotifyData::load(&notify_path)?.last_notification;
         let now = Utc::now();
+        let today = now.date_naive();
 
         // Check if user was already notified today
         if last_notif.is_none_or(|t| t.num_days_from_ce() != now.num_days_from_ce()) {
-            let expected_end = timecard.get_expected_end_time(config.work_duration, &now);
+            let expected_end = timecard.get_expected_end_time(config.work_duration, &today);
             if let Some(end_time) = expected_end
                 && end_time.num_days_from_ce() == now.num_days_from_ce()
                 && now >= end_time

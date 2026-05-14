@@ -1,4 +1,6 @@
-use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
+use chrono::{
+    DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc,
+};
 use colored::Colorize;
 use timecard::Timecard;
 
@@ -14,6 +16,12 @@ pub fn date(datetime: &DateTime<Utc>) -> String {
     let config = Config::get();
     let fmt = &config.date_fmt;
     datetime.with_timezone(&Local).format(fmt).to_string()
+}
+
+pub fn date_naive(naive_date: &NaiveDate) -> String {
+    let naive_datetime = naive_date.and_time(NaiveTime::from_hms_opt(12, 0, 0).unwrap());
+    let datetime = naive_datetime.and_local_timezone(Utc).single().unwrap();
+    date(&datetime)
 }
 
 pub fn datetime(datetime: &DateTime<Utc>) -> String {
@@ -60,7 +68,7 @@ fn from_input(input: &str) -> Option<DateTime<Utc>> {
 
     if let Ok(std_time) = humantime::parse_rfc3339_weak(input) {
         let local_time: DateTime<Local> = std_time.into();
-        return Some(local_time.to_utc())
+        return Some(local_time.to_utc());
     }
 
     None
@@ -88,7 +96,11 @@ pub fn time_from_input(input: &str) -> Result<DateTime<Utc>, String> {
         .find_map(|fmt| NaiveTime::parse_from_str(input, fmt).ok());
     if let Some(specific_time) = time {
         let naive_dt = Local::now().date_naive().and_time(specific_time);
-        return naive_dt.and_local_timezone(Local).single().map(|dt| dt.to_utc()).ok_or("Failed to parse NaiveTime".into())
+        return naive_dt
+            .and_local_timezone(Local)
+            .single()
+            .map(|dt| dt.to_utc())
+            .ok_or("Failed to parse NaiveTime".into());
     }
 
     const DATE_PREFIXES: &[&str] = &["%Y-%m-%dT", "%Y-%m-%d ", "%Y%m%d_", "%Y%m%dT"];
@@ -104,7 +116,11 @@ pub fn time_from_input(input: &str) -> Result<DateTime<Utc>, String> {
         .iter()
         .find_map(|fmt| NaiveDateTime::parse_from_str(input, fmt).ok());
     if let Some(specific_datetime) = datetime {
-        return specific_datetime.and_local_timezone(Local).single().map(|dt| dt.to_utc()).ok_or("Failed to parse NaiveDateTime".into())
+        return specific_datetime
+            .and_local_timezone(Local)
+            .single()
+            .map(|dt| dt.to_utc())
+            .ok_or("Failed to parse NaiveDateTime".into());
     }
 
     if let Ok(minutes) = input.parse::<i64>() {
@@ -129,7 +145,11 @@ pub fn date_from_input(input: &str) -> Result<DateTime<Utc>, String> {
         .find_map(|fmt| NaiveDate::parse_from_str(input, fmt).ok());
     if let Some(specific_date) = date {
         let naive_dt = specific_date.and_time(NaiveTime::parse_from_str("12:00", "%H:%M").unwrap());
-        return Local.from_local_datetime(&naive_dt).single().map(|dt| dt.to_utc()).ok_or("Failed to parse NaiveDate".into())
+        return Local
+            .from_local_datetime(&naive_dt)
+            .single()
+            .map(|dt| dt.to_utc())
+            .ok_or("Failed to parse NaiveDate".into());
     }
 
     if let Ok(days) = input.parse::<i64>() {
@@ -143,12 +163,13 @@ pub fn date_from_input(input: &str) -> Result<DateTime<Utc>, String> {
     Err("Invalid datetime format".into())
 }
 
-
-pub fn print_status(timecard: &Timecard, date: &NaiveDate<Utc>) {
+pub fn print_status(timecard: &Timecard, date: &NaiveDate) {
     let config = Config::get();
     let duration_worked = timecard.get_duration_worked(&date, true);
     let duration_on_break = timecard.get_duration_on_break(&date, true);
-    let end_time = timecard.get_expected_end_time(config.work_duration, &date).unwrap();
+    let end_time = timecard
+        .get_expected_end_time(config.work_duration, &date)
+        .unwrap();
     println!("Worked for {}", duration(&duration_worked).green());
     println!("On break for {}", duration(&duration_on_break).red());
     println!("Expected end time: {}", time(&end_time).cyan());
