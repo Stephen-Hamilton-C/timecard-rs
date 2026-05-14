@@ -78,19 +78,25 @@ fn estimate(
     period_start: NaiveDate,
     period_end: NaiveDate,
     today_offset_days: i64,
+    requirements: WorkPeriodRequirements,
     entries: &[(i64, u32, u32, i64, u32, u32)],
 ) -> Result<HashMap<NaiveDate, Option<Duration>>, Box<dyn std::error::Error>> {
     let period = make_period(period_start, period_end, today_offset_days)?;
     let timecard = make_timecard(period_start, entries)?;
-    let reqs = mon_fri_requirements();
-    Ok(period.estimate_time_to_work(&timecard, &reqs))
+    Ok(period.estimate_time_to_work(&timecard, &requirements))
 }
 
 /// Standard Mon–Fri 5-day period starting 2026-03-30, today = day 2 (Wednesday).
 fn default_period_estimate(
     entries: &[(i64, u32, u32, i64, u32, u32)],
 ) -> Result<HashMap<NaiveDate, Option<Duration>>, Box<dyn std::error::Error>> {
-    estimate(date(2026, 3, 30), date(2026, 4, 3), 2, entries)
+    estimate(
+        date(2026, 3, 30),
+        date(2026, 4, 3),
+        2,
+        mon_fri_requirements(),
+        entries,
+    )
 }
 
 fn assert_dur_opt_eq(dur1: Option<Duration>, dur2: Option<Duration>, day: NaiveDate) {
