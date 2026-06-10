@@ -31,6 +31,8 @@ pub struct Config {
     #[serde(default = "default_entry_lifetime_days")]
     #[validate(minimum = 1)]
     pub entry_lifetime_days: Option<i64>,
+
+    pub log_path: Option<String>,
 }
 
 impl Config {

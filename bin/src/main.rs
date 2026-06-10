@@ -6,7 +6,7 @@ mod chrono_humantime;
 
 use std::fs;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use chrono::{Duration, Utc};
 use clap::Parser;
 use platform_dirs::AppDirs;
@@ -37,9 +37,22 @@ fn main() -> Result<()> {
     fs::create_dir_all(&app_dirs.data_dir)
         .context(format!("Failed to create data directory: {}", &app_dirs.data_dir.display()))?;
     let config_path = app_dirs.config_dir.join("timecard-cli.toml");
-    let timecard_path = app_dirs.data_dir.join("timecard.json");
-
     let config = Config::load(&config_path)?;
+
+    let timecard_path = if let Some(log_path_str) = &config.log_path {
+        let mut log_path = expanduser::expanduser(log_path_str)
+            .context("Failed to expand user's home directory from log_path")?;
+        if log_path.is_relative() {
+            bail!("Config field 'log_path' cannot be a relative path!")
+        }
+
+        if log_path.is_dir() {
+            log_path = log_path.join("timecard.json")
+        }
+        log_path
+    } else {
+        app_dirs.data_dir.join("timecard.json")
+    };
     let mut timecard = Timecard::load(&timecard_path)?;
 
     match &cli.command {

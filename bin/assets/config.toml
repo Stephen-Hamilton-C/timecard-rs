@@ -49,3 +49,10 @@ datetime_fmt = "%Y-%m-%d %I:%M %p"
 # | `>>M`     | `09`    | Whole minutes, padded with zeros         |
 # default "%HH hours, %MM minutes"
 duration_fmt = "%HH hours, %MM minutes"
+
+# Location for the timecard data file
+# Supports using tilde (~) for your home directory
+# This is optional, and the default value depends on your environment
+# This must be an absolute path. Relative paths will be rejected.
+# If a directory is supplied, the file `timecard.json` will be used inside the directory
+# log_path = "~/.local/share/timecard/timecard.json"
