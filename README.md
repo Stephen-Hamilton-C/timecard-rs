@@ -1,3 +1,7 @@
+# Archived - 2026-09-17
+All repositories have been transferred to a personally-run repository.
+This remains up for legacy purposes.
+
 # timecard-rs
 
 This is a program I make whenever I want to learn the intricacies of a language.
